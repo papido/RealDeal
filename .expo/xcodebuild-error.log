@@ -1,0 +1,10 @@
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:0092E929-CC74-4B23-AE1B-A713123D77FF, OS:18.5, name:iPhone 16 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:0092E929-CC74-4B23-AE1B-A713123D77FF, OS:18.5, name:iPhone 16 Pro }
+** BUILD FAILED **
+
+
+The following build commands failed:
+	ScanDependencies /Users/fauzanmacm1/Library/Developer/Xcode/DerivedData/RealDeal-fwtbuiuvbjiztqauafgipczpyifp/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/gRPC-C++.build/Objects-normal/arm64/gRPC-C++-dummy.o /Users/fauzanmacm1/Downloads/RealDeal-Temp/ios/Pods/Target\ Support\ Files/gRPC-C++/gRPC-C++-dummy.m normal arm64 objective-c com.apple.compilers.llvm.clang.1_0.compiler (in target 'gRPC-C++' from project 'Pods')
+	Building workspace RealDeal with scheme RealDeal and configuration Debug
+(2 failures)
