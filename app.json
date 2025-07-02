@@ -21,7 +21,7 @@
       "bundleIdentifier": "com.fauzanafk.RealDeal",
       "buildNumber": "1",
       "deploymentTarget": "13.4",
-      "googleServicesFile": "./ios/GoogleService-Info.plist",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby deals and listings.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby deals and listings.",
