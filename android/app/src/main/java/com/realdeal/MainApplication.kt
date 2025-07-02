@@ -1,4 +1,4 @@
-package com.fauzanafk.RealDeal
+package com.realdeal
 
 import android.app.Application
 import android.content.res.Configuration
