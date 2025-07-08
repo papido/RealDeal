@@ -168,7 +168,7 @@ const DeliveryPricing = () => {
             Items: RM
             {items
               .reduce(
-                (sum, item) => sum + item.productItem.price * item.quantity,
+                (sum, item) => sum + item.totalItem.price * item.quantity,
                 0
               )
               .toFixed(2)}

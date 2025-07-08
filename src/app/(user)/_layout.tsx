@@ -15,7 +15,7 @@ const _layout = () => {
         tabBarStyle: {
           backgroundColor: colors.primary,
           borderTopColor: "#ccc",
-          height: 50,
+          height: 80,
         },
       }}
     >

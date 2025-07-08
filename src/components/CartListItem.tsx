@@ -20,10 +20,10 @@ const CartListItem = ({ cartItem }: CartListItemProps) => {
         resizeMode="contain"
       />
       <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{cartItem.productItem.name}</Text>
+        <Text style={styles.title}>{cartItem.product.name}</Text>
         <View style={styles.subtitleContainer}>
           <Text style={styles.price}>
-            RM{cartItem.productItem.price.toFixed(2)}
+            RM{cartItem.totalItem.price.toFixed(2)}
           </Text>
         </View>
       </View>

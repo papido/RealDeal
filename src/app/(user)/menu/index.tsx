@@ -5,7 +5,7 @@ import { useAuth } from "@/src/providers/authProvider";
 import { ProductType } from "@/src/types";
 import { router } from "expo-router";
 import React from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Linking, StyleSheet, Text, View } from "react-native";
 
 const MenuScreen = () => {
   const { user } = useAuth();
@@ -24,8 +24,7 @@ const MenuScreen = () => {
           <Text style={styles.welcomeUsername}>{user?.username} 👋</Text>
         </View>
         <Text>
-          Here you can find the best Halal meal kits that you can cook anytime
-          and anywhere.
+          Here you can find the best Halal dry ingredients for your meal.
         </Text>
       </View>
 
@@ -45,6 +44,20 @@ const MenuScreen = () => {
           <Text style={styles.text}>😕 No meal kits found.</Text>
         </View>
       )}
+
+      {/* Feedback Link */}
+      <View style={styles.feedbackContainer}>
+        <Text style={styles.feedbackText}>
+          If you have any feedback, feel free to tell us{" "}
+          <Text
+            style={styles.link}
+            onPress={() => Linking.openURL("https://wa.me/601163036269")}
+          >
+            HERE
+          </Text>
+          .
+        </Text>
+      </View>
     </View>
   );
 };
@@ -84,5 +97,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  feedbackContainer: {
+    padding: 16,
+    alignItems: "center",
+  },
+  feedbackText: {
+    textAlign: "center",
+    fontSize: 14,
+    color: "#555",
+  },
+  link: {
+    color: "green",
+    fontWeight: "bold",
+    textDecorationColor: "green",
+    textDecorationLine: "underline",
   },
 });

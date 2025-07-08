@@ -12,6 +12,7 @@ export type ProductType = {
   ingredients?: string;
   price?: string;
   createdAt?: Date;
+  portion?: string;
   items?: ProductItem[];
   uid?: string;
 };
@@ -19,6 +20,10 @@ export type ProductType = {
 export type ProductItem = {
   id: string;
   name: string;
+  price: number;
+};
+
+export type TotalItem = {
   price: number;
 };
 
@@ -36,12 +41,10 @@ export type ImageUploadProps = {
   placeholder?: string;
 };
 
-export type PizzaSize = "S" | "M" | "L" | "XL";
-
 export type CartItem = {
   id?: string;
   product: ProductType;
-  productItem: ProductItem;
+  totalItem: TotalItem;
   quantity: number;
 };
 
@@ -75,7 +78,7 @@ export type OrderItem = {
   id?: string;
   productName: ProductType["name"];
   productImage: ProductImageType["uri"];
-  productItem: ProductItem;
+  totalItem: TotalItem;
   quantity: number;
 };
 

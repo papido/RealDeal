@@ -11,8 +11,8 @@ import {
   CartItem,
   OrderType,
   PaymentType,
-  ProductItem,
   ProductType,
+  TotalItem,
 } from "../types";
 import { useAuth } from "./authProvider";
 
@@ -34,7 +34,7 @@ interface DeliveryInfo {
 type CartType = {
   items: CartItem[];
   order: OrderType;
-  addItem: (product: ProductType, item: CartItem["productItem"]) => void;
+  addItem: (product: ProductType, item: CartItem["totalItem"]) => void;
   updateQuantity: (itemId: string, amount: -1 | 1) => void;
   total: number;
   checkout: (deliveryDate: Date) => void;
@@ -265,12 +265,8 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  const addItem = async (product: ProductType, productItem: ProductItem) => {
-    const existingItem = items.find(
-      (item) =>
-        item.product.id === product.id &&
-        item.productItem.name === productItem.name
-    );
+  const addItem = async (product: ProductType, totalItem: TotalItem) => {
+    const existingItem = items.find((item) => item.product.id === product.id);
 
     if (existingItem) {
       updateQuantity(existingItem.id!, 1);
@@ -280,7 +276,7 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     const newCartItem: CartItem = {
       id: randomUUID().split("-")[0],
       product,
-      productItem,
+      totalItem,
       quantity: 1,
     };
 
@@ -316,7 +312,7 @@ const CartProvider = ({ children }: PropsWithChildren) => {
   };
 
   const total = items.reduce(
-    (sum, item) => (sum += item.productItem.price * item.quantity),
+    (sum, item) => (sum += item.totalItem.price * item.quantity),
     0
   );
 
@@ -340,10 +336,8 @@ const CartProvider = ({ children }: PropsWithChildren) => {
         id: item.id,
         productName: item.product.name,
         productImage: item.product.images[0].uri,
-        productItem: {
-          id: item.productItem.id,
-          name: item.productItem.name,
-          price: item.productItem.price,
+        totalItem: {
+          price: item.totalItem.price,
         },
         quantity: item.quantity,
       })),
@@ -436,7 +430,7 @@ const CartProvider = ({ children }: PropsWithChildren) => {
         calculateDeliveryForCurrentLocation,
         calculateDeliveryFromAddress,
         getTotalWithDelivery,
-        cartItems: items, // Expose cart items
+        cartItems: items,
         clearDeliveryInfo,
       }}
     >

@@ -4,9 +4,10 @@ import { FontAwesome, SimpleLineIcons } from "@expo/vector-icons";
 import "config/firebase.ts";
 import * as Font from "expo-font";
 import * as Notifications from "expo-notifications";
-import { SplashScreen, Stack } from "expo-router";
+import { router, SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
+import { Alert, TouchableOpacity } from "react-native";
 import { AuthProvider, useAuth } from "../providers/authProvider";
 import { SplashProvider } from "../providers/SplashProvider";
 
@@ -49,6 +50,34 @@ const AppLayout = () => {
             presentation: "modal",
             headerLeft: () => null,
             headerBackVisible: false,
+            headerRight: ({ tintColor }) => (
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    "Are you sure?",
+                    "Do you want to cancel the order?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Yes",
+                        onPress: () => {
+                          router.replace("/");
+                        },
+                        style: "destructive",
+                      },
+                    ],
+                    { cancelable: true }
+                  );
+                }}
+                style={{ marginRight: 15 }}
+              >
+                <FontAwesome
+                  name="close"
+                  size={24}
+                  color={tintColor || "black"}
+                />
+              </TouchableOpacity>
+            ),
           }}
         />
       </Stack>

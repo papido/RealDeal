@@ -2,7 +2,7 @@ import { useFetchIdProducts } from "@/services/useFetchIdProduct";
 import Loading from "@/src/components/Loading";
 import { colors } from "@/src/constants/theme";
 import { useCart } from "@/src/providers/CartProvider";
-import { ProductItem } from "@/src/types";
+import { ProductItem, TotalItem } from "@/src/types";
 import Button from "@components/Button";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -21,9 +21,12 @@ const ProductDetailsScreen = () => {
   const { addItem } = useCart();
   const router = useRouter();
   const { product, loading, fetchProduct } = useFetchIdProducts();
-  const [selectedItem, setSelectedItem] = useState<ProductItem>();
+  const [items, setItems] = useState<ProductItem[] | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [showError, setShowError] = useState(false);
+
+  const totalItem: TotalItem = {
+    price: items?.reduce((sum, item) => sum + item.price, 0) ?? 0,
+  };
 
   useEffect(() => {
     if (id) {
@@ -31,13 +34,15 @@ const ProductDetailsScreen = () => {
     }
   }, [id]);
 
-  const addToCart = () => {
-    if (!product || !selectedItem) {
-      setShowError(true);
-      return;
+  useEffect(() => {
+    if (product && items === null) {
+      setItems(product.items || []);
     }
-    setShowError(false);
-    addItem(product, selectedItem);
+  }, [product]);
+
+  const addToCart = () => {
+    if (items === null) return;
+    addItem(product!, totalItem);
     router.push("/cart");
   };
 
@@ -76,44 +81,34 @@ const ProductDetailsScreen = () => {
       <Text style={styles.prepTime}>{product.prepTime} minutes</Text>
       <Text style={styles.speciality}>{product.speciality}</Text>
       <Text style={styles.description}>{product.description}</Text>
-      <Text style={styles.sectionTitle}>Ingredients:</Text>
-      <Text style={styles.description}>{product.ingredients}</Text>
+      <Text style={styles.description}>{product.portion}</Text>
 
       {/* Item Selection */}
-      <Text style={styles.sectionTitle}>Choose Portion:</Text>
+      <Text style={styles.sectionTitle}>Ingredients:</Text>
       <View style={styles.items}>
-        {product.items?.map((mapItem) => (
-          <Pressable
-            onPress={() => {
-              setSelectedItem(mapItem);
-              setShowError(false);
-            }}
-            key={mapItem.name}
-            style={[
-              styles.item,
-              selectedItem === mapItem && styles.selectedItem,
-            ]}
-          >
-            <Text
-              style={[
-                styles.itemText,
-                selectedItem === mapItem && styles.selectedItemText,
-              ]}
+        {items?.map((mapItem) => (
+          <View key={mapItem.name} style={styles.item}>
+            <Text style={styles.itemText}>{mapItem.name}</Text>
+            <Pressable
+              style={styles.deleteButton}
+              onPress={() => {
+                const updatedItems = items!.filter((item) => item !== mapItem);
+                setItems(updatedItems);
+              }}
             >
-              {mapItem.name}
-            </Text>
-          </Pressable>
+              <Text style={styles.deleteButtonText}>×</Text>
+            </Pressable>
+          </View>
         ))}
       </View>
 
       <View style={{ marginTop: "auto" }}>
-        {showError && (
-          <Text style={styles.errorText}>Choose a portion first.</Text>
-        )}
         {/* Price */}
-        <Text style={styles.price}>
-          RM {selectedItem ? selectedItem.price.toFixed(2) : product.price}
-        </Text>
+        {!items ? null : items.length === 0 ? (
+          <Text style={styles.errorText}>No items selected.</Text>
+        ) : (
+          <Text style={styles.price}>RM {totalItem.price.toFixed(2)}</Text>
+        )}
 
         {/* Add to Cart */}
         <Button onPress={addToCart} loading={loading} style={styles.button}>
@@ -184,7 +179,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginTop: 10,
+    marginTop: 5,
     marginBottom: 10,
   },
   items: {
@@ -194,8 +189,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   item: {
+    flexDirection: "row", // ⬅️ Side by side
+    justifyContent: "space-between", // ⬅️ Pushes delete to the end
+    alignItems: "center",
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     borderRadius: 10,
     backgroundColor: "#f1f1f1",
     marginBottom: 10,
@@ -206,6 +204,8 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 16,
     color: "#444",
+    flexShrink: 1,
+    marginRight: 10,
   },
   selectedItemText: {
     fontWeight: "bold",
@@ -229,5 +229,17 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     fontSize: 14,
     fontWeight: "600",
+  },
+  deleteButton: {
+    backgroundColor: "#ddd",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
   },
 });
