@@ -43,17 +43,30 @@ const UploadPaymentScreen = () => {
 
   const handleUpload = async () => {
     if (!buttonTrigger) {
-      return Alert.alert(
-        "Send QR Receipt",
-        "Have you sent the QR payment receipt on WhatsApp?",
-        [
-          { text: "No", onPress: () => openWhatsApp() },
-          { text: "Yes", onPress: () => setButtonTrigger(true) },
-        ],
-        { cancelable: true }
-      );
+      return showConfirmAlert();
     }
+    await uploadImage();
+  };
 
+  const showConfirmAlert = () => {
+    Alert.alert(
+      "Send QR Receipt",
+      "Have you sent the QR payment receipt on WhatsApp?",
+      [
+        { text: "No", onPress: () => openWhatsApp() },
+        {
+          text: "Yes",
+          onPress: async () => {
+            setButtonTrigger(true);
+            await uploadImage(); // directly upload here
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const uploadImage = async () => {
     try {
       await submitPayment(image ?? "");
       setImage(null);
@@ -133,7 +146,7 @@ const UploadPaymentScreen = () => {
         {/* --- Upload Section --- */}
         <Text style={styles.sectionTitle}>3.Upload Payment Proof📤 </Text>
         <Text style={styles.subText}>
-          Make a payment and share to WhatsApp.
+          Scan the saved QR code using Maybank app{"\n"}and share to WhatsApp.
         </Text>
 
         <View style={styles.uploadRow}>

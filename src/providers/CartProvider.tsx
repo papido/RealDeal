@@ -318,7 +318,7 @@ const CartProvider = ({ children }: PropsWithChildren) => {
 
   const getTotalWithDelivery = (): number => {
     if (!deliveryInfo?.isWithinRange) return total;
-    return total + deliveryInfo.fee;
+    return parseFloat((total + deliveryInfo.fee).toFixed(2));
   };
 
   const checkout = async (deliveryDate: Date) => {
