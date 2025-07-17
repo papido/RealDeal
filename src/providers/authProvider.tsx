@@ -196,8 +196,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           username: userCredential.user.displayName,
           email: userCredential.user.email,
           uid: userCredential.user.uid,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          address: "",
+          lastSignedIn: firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
       );
@@ -225,13 +224,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       // Save user to Firestore
       const username = auth().currentUser?.displayName;
-      await firestore().collection("users").doc(response.user.uid).set({
-        username,
-        email,
-        uid: response.user.uid,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        address: "",
-      });
+      await firestore().collection("users").doc(response.user.uid).set(
+        {
+          username,
+          email,
+          uid: response.user.uid,
+          lastSignedIn: firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       console.log("✅ Email login successful");
       return { success: true };

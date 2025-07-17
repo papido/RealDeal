@@ -11,53 +11,69 @@ const MenuScreen = () => {
   const { user } = useAuth();
 
   const { data: products } = useFetchData<ProductType>("products", (ref) => {
-    if (!user?.uid) return ref;
-    return ref.where("uid", "==", user.uid).orderBy("createdAt", "desc");
+    return ref.orderBy("createdAt", "desc");
   });
+
+  // console.log(
+  //   "Products passed to FlatList:",
+  //   products.map((p) => p.name)
+  // );
+
+  const displayedProducts =
+    products.length % 2 === 1
+      ? [...products, { id: "placeholder" } as ProductType]
+      : products;
 
   return (
     <View style={styles.container}>
-      {/* Welcome Card */}
-      <View style={styles.welcomeCard}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={styles.welcomeText}>Welcome, </Text>
-          <Text style={styles.welcomeUsername}>{user?.username} 👋</Text>
-        </View>
-        <Text>
-          Here you can find the best Halal dry ingredients for your meal.
-        </Text>
-      </View>
-
       {/* Product List */}
       {products.length > 0 ? (
         <FlatList
-          data={products}
-          renderItem={({ item }) => (
-            <ProductListItem product={item} router={router} />
-          )}
+          data={displayedProducts}
+          renderItem={({ item }) =>
+            item.id === "placeholder" ? (
+              <View style={{ flex: 1, margin: 3, opacity: 0 }} />
+            ) : (
+              <View style={{ flex: 1, margin: 5 }}>
+                <ProductListItem product={item} router={router} />
+              </View>
+            )
+          }
           numColumns={2}
-          contentContainerStyle={{ gap: 10, padding: 10 }}
-          columnWrapperStyle={{ gap: 10 }}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 10 }}
+          ListHeaderComponent={() => (
+            <View style={styles.welcomeCard}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={styles.welcomeText}>Welcome, </Text>
+                <Text style={styles.welcomeUsername}>{user?.username} 👋</Text>
+              </View>
+              <Text>
+                Here you can find the best Halal and dry ingredients for your
+                meal.
+              </Text>
+            </View>
+          )}
+          ListFooterComponent={() => (
+            <View style={styles.feedbackContainer}>
+              <Text style={styles.feedbackText}>
+                If you have any feedback, feel free to tell us{" "}
+                <Text
+                  style={styles.link}
+                  onPress={() => Linking.openURL("https://wa.me/601163036269")}
+                >
+                  HERE
+                </Text>
+                .
+              </Text>
+            </View>
+          )}
         />
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.text}>😕 No meal kits found.</Text>
         </View>
       )}
-
-      {/* Feedback Link */}
-      <View style={styles.feedbackContainer}>
-        <Text style={styles.feedbackText}>
-          If you have any feedback, feel free to tell us{" "}
-          <Text
-            style={styles.link}
-            onPress={() => Linking.openURL("https://wa.me/601163036269")}
-          >
-            HERE
-          </Text>
-          .
-        </Text>
-      </View>
     </View>
   );
 };
@@ -71,7 +87,6 @@ const styles = StyleSheet.create({
   },
   welcomeCard: {
     alignSelf: "flex-start",
-    marginTop: 10,
     marginHorizontal: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,

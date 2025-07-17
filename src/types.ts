@@ -3,7 +3,7 @@ import * as Notifications from "expo-notifications";
 import { ViewStyle } from "react-native";
 
 export type ProductType = {
-  id?: string;
+  id: string;
   prepTime?: string;
   images: ProductImageType[];
   name: string;
