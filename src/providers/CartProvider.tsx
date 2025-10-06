@@ -13,7 +13,7 @@ import {
   PaymentType,
   ProductType,
   TotalItem,
-} from "../types";
+} from "../constants/types";
 import { useAuth } from "./authProvider";
 
 // Location and delivery constants

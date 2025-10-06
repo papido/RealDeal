@@ -1,5 +1,5 @@
 import { firestore } from "@/config/firebase";
-import { OrderType, ResponseType } from "@/src/types";
+import { OrderType, ResponseType } from "@/src/constants/types";
 import dayjs from "dayjs";
 
 export const createOrder = async (

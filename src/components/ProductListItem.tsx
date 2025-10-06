@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Router } from "expo-router";
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { ProductType } from "../types";
+import { ProductType } from "../constants/types";
 
 export const defaultPizzaImage =
   "https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/default.png";

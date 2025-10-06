@@ -11,8 +11,8 @@ import React, {
   useState,
 } from "react";
 
-import { AuthContextType, UserType } from "@/src/types";
-import { registerForPushNotificationsAsync } from "@/utils/registerForPushNotificationsAsync";
+import { registerForPushNotificationsAsync } from "@/services/registerForPushNotificationsAsync";
+import { AuthContextType, UserType } from "@/src/constants/types";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Alert } from "react-native";
 

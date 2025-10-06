@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useCart } from "../providers/CartProvider";
 import { useAuth } from "../providers/authProvider";
-import Button from "./Button";
 
 const DELIVERY_RATE_PER_KM = 2.5; // RM 2.50 per km
 // const BASE_DELIVERY_FEE = 0.0; // RM 0.00 base fee
@@ -92,7 +91,7 @@ const DeliveryPricing = () => {
       </View> */}
 
       {/* Location and Delivery Section */}
-      <View style={styles.deliverySection}>
+      {/*<View style={styles.deliverySection}>
         {shouldShowLocationButton && (
           <Button
             onPress={handleCalculateDelivery}
@@ -107,43 +106,30 @@ const DeliveryPricing = () => {
                   : "Get Location & Calculate Delivery"}
             </Text>
           </Button>
-        )}
+        )}*/}
 
-        {locationError && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{locationError}</Text>
-            <Button
-              onPress={handleCalculateDelivery}
-              loading={locationLoading}
-              style={styles.retryButton}
-            >
-              <Text style={styles.locationButtonText}>Retry</Text>
-            </Button>
-          </View>
-        )}
+      {shouldShowDeliveryInfo && (
+        <View style={styles.deliveryInfo}>
+          <Text style={styles.deliverySourceText}>
+            {hasUserAddress
+              ? "📍 From saved address"
+              : "📍 From current location"}
+          </Text>
+          <Text style={styles.deliveryText}>
+            Distance: {deliveryInfo.distance.toFixed(2)} km
+          </Text>
+          <Text style={styles.deliveryText}>
+            Distance charge: RM
+            {(deliveryInfo.distance * DELIVERY_RATE_PER_KM).toFixed(2)} (
+            {deliveryInfo.distance.toFixed(2)} km × RM{DELIVERY_RATE_PER_KM})
+          </Text>
+          <Text style={styles.deliveryTotal}>
+            Total delivery: RM{deliveryInfo.fee.toFixed(2)}
+          </Text>
+        </View>
+      )}
 
-        {shouldShowDeliveryInfo && (
-          <View style={styles.deliveryInfo}>
-            <Text style={styles.deliverySourceText}>
-              {hasUserAddress
-                ? "📍 From saved address"
-                : "📍 From current location"}
-            </Text>
-            <Text style={styles.deliveryText}>
-              Distance: {deliveryInfo.distance.toFixed(2)} km
-            </Text>
-            <Text style={styles.deliveryText}>
-              Distance charge: RM
-              {(deliveryInfo.distance * DELIVERY_RATE_PER_KM).toFixed(2)} (
-              {deliveryInfo.distance.toFixed(2)} km × RM{DELIVERY_RATE_PER_KM})
-            </Text>
-            <Text style={styles.deliveryTotal}>
-              Total delivery: RM{deliveryInfo.fee.toFixed(2)}
-            </Text>
-          </View>
-        )}
-
-        {deliveryInfo && !deliveryInfo.isWithinRange && (
+      {/*{deliveryInfo && !deliveryInfo.isWithinRange && (
           <View style={styles.outOfRangeContainer}>
             <Text style={styles.outOfRangeText}>
               Delivery not available to your location (
@@ -158,8 +144,8 @@ const DeliveryPricing = () => {
                 : "Based on current location"}
             </Text>
           </View>
-        )}
-      </View>
+        )}}
+        </View>*/}
 
       {/* Pricing Section */}
       {items && items.length > 0 && (
@@ -176,9 +162,9 @@ const DeliveryPricing = () => {
           {/* Show delivery fee if delivery info exists */}
           {shouldShowDeliveryInfo && (
             <>
-              <Text style={styles.deliveryPrice}>
+              {/*<Text style={styles.deliveryPrice}>
                 Delivery: RM{deliveryInfo.fee.toFixed(2)}
-              </Text>
+              </Text> */}
               <Text style={styles.totalPrice}>
                 Total: RM{getTotalWithDelivery().toFixed(2)}
               </Text>

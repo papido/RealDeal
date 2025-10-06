@@ -3149,6 +3149,8 @@ PODS:
     - Yoga
   - react-native-receive-sharing-intent (2.0.0):
     - React-Core
+  - react-native-render-html (6.3.4):
+    - React-Core
   - react-native-safe-area-context (5.4.0):
     - DoubleConversion
     - glog
@@ -4012,6 +4014,7 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
   - react-native-receive-sharing-intent (from `../node_modules/react-native-receive-sharing-intent`)
+  - react-native-render-html (from `../node_modules/react-native-render-html`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-webview (from `../node_modules/react-native-webview`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -4244,6 +4247,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-pager-view"
   react-native-receive-sharing-intent:
     :path: "../node_modules/react-native-receive-sharing-intent"
+  react-native-render-html:
+    :path: "../node_modules/react-native-render-html"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-webview:
@@ -4439,6 +4444,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 44180d1c009908666733364261fabf0613ac77e7
   react-native-pager-view: 04ff926ac8977b63970da40effd02963b60e0970
   react-native-receive-sharing-intent: cbd6daac89f5e84c231fe0d8e5453490cc431193
+  react-native-render-html: 5afc4751f1a98621b3009432ef84c47019dcb2bd
   react-native-safe-area-context: 5928d84c879db2f9eb6969ca70e68f58623dbf25
   react-native-webview: 2489d02c8e729bbd323dcb83ab9ea3b0a150b3f6
   React-NativeModulesApple: 5b234860053d0dd11f3442f38b99688ff1c9733b

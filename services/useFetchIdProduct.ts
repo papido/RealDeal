@@ -1,5 +1,5 @@
 import { firestore } from "@/config/firebase";
-import { ProductType } from "@/src/types";
+import { ProductType } from "@/src/constants/types";
 import { useState } from "react";
 
 export const useFetchIdProducts = () => {

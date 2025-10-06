@@ -1,13 +1,12 @@
 import { useCart } from "@/src/providers/CartProvider";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import Button from "../components/Button";
 import CartListItem from "../components/CartListItem";
 import DeliveryPricing from "../components/DeliveryPricing";
-import DeliveryScheduler from "../components/DeliveryScheduler";
+import ExpandableInputs from "../components/ExpandableInputs";
 
 const CartScreen = () => {
-  const { items, checkout, loading } = useCart();
+  const { items } = useCart();
 
   const [selectedDateTime, setSelectedDateTime] = useState(() => {
     const tomorrow = new Date();
@@ -35,23 +34,15 @@ const CartScreen = () => {
 
           {/* Delivery Scheduler */}
           <View style={styles.checkoutSection}>
-            <DeliveryScheduler
+            {/*<DeliveryScheduler
               onDateTimeChange={handleDateTimeChange}
               initialDate={selectedDateTime}
-            />
+            /> */}
 
             {/* Delivery Pricing and Checkout */}
             <View style={styles.totalSection}>
+              <ExpandableInputs />
               <DeliveryPricing />
-
-              <Button
-                onPress={() => checkout(selectedDateTime)}
-                loading={loading}
-                disabled={loading}
-                style={styles.checkoutButton}
-              >
-                <Text style={styles.checkoutButtonText}>Checkout</Text>
-              </Button>
             </View>
           </View>
         </>
@@ -67,7 +58,6 @@ const styles = StyleSheet.create({
   },
   cartList: {
     gap: 10,
-    marginBottom: 10,
   },
   emptyCartText: {
     textAlign: "center",
@@ -76,7 +66,6 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   checkoutSection: {
-    paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
   },

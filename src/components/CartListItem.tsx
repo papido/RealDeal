@@ -1,10 +1,12 @@
-import { FontAwesome } from "@expo/vector-icons";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
+import { CartItem } from "../constants/types";
 import { useCart } from "../providers/CartProvider";
-import { CartItem } from "../types";
 import { defaultPizzaImage } from "./ProductListItem";
+dayjs.extend(relativeTime);
 
 type CartListItemProps = {
   cartItem: CartItem;
@@ -26,21 +28,13 @@ const CartListItem = ({ cartItem }: CartListItemProps) => {
             RM{cartItem.totalItem.price.toFixed(2)}
           </Text>
         </View>
+        <Text style={styles.price}>{cartItem.product.speciality}</Text>
+        <Text style={styles.time}>
+          {dayjs(cartItem.product.createdAt).fromNow()}
+        </Text>
       </View>
       <View style={styles.quantitySelector}>
-        <FontAwesome
-          onPress={() => updateQuantity(cartItem.id!, -1)}
-          name="minus"
-          color="gray"
-          style={{ padding: 5 }}
-        />
-        <Text style={styles.quantity}>{cartItem.quantity}</Text>
-        <FontAwesome
-          onPress={() => updateQuantity(cartItem.id!, 1)}
-          name="plus"
-          color="gray"
-          style={{ padding: 5 }}
-        />
+        <Text style={styles.quantity}>{cartItem.quantity} grams</Text>
       </View>
     </View>
   );
@@ -75,6 +69,7 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: "center",
     marginVertical: 10,
+    padding: 20,
   },
   quantity: {
     fontWeight: "500",
@@ -83,6 +78,9 @@ const styles = StyleSheet.create({
   price: {
     color: colors.light.text,
     fontWeight: "bold",
+  },
+  time: {
+    color: "gray",
   },
 });
 

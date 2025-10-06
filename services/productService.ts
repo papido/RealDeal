@@ -1,5 +1,5 @@
 import { firestore } from "@/config/firebase";
-import { ProductType, ResponseType } from "@/src/types";
+import { ProductType, ResponseType } from "@/src/constants/types";
 import uuid from "react-native-uuid";
 import { uploadFileToCloudinary } from "./imageService";
 export const defaultPizzaImage =

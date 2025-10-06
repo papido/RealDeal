@@ -1,8 +1,8 @@
 import { useFetchIdProducts } from "@/services/useFetchIdProduct";
 import Loading from "@/src/components/Loading";
 import { colors } from "@/src/constants/theme";
+import { ProductItem, TotalItem } from "@/src/constants/types";
 import { useCart } from "@/src/providers/CartProvider";
-import { ProductItem, TotalItem } from "@/src/types";
 import Button from "@components/Button";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";

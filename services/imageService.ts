@@ -2,7 +2,7 @@ import {
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_UPLOAD_PRESET,
 } from "@/src/constants";
-import { ResponseType } from "@/src/types";
+import { ResponseType } from "@/src/constants/types";
 import axios from "axios";
 
 const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;

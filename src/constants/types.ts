@@ -64,14 +64,18 @@ export type OrderStatus =
   | "Delivered";
 
 export type OrderType = {
-  id?: string;
+  _id?: string;
+  title?: string;
+  description: string;
+  image?: string;
+  isDisabled?: boolean;
+  startDateTime?: string;
+  endDateTime?: string;
+  lastUpdatedByPFNumber?: string;
+  eventKeyword?: string;
   createdAt?: string;
-  total?: number;
-  uid?: string;
-  status?: OrderStatus;
-  deliveryDateTime?: string;
-
-  orderItems?: OrderItem[];
+  updatedAt?: string;
+  signature?: string;
 };
 
 export type OrderItem = {

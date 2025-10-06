@@ -1,5 +1,5 @@
 import { firestore } from "@/config/firebase";
-import { OrderType } from "@/src/types";
+import { OrderType } from "@/src/constants/types";
 import { useState } from "react";
 
 export const useFetchIdOrders = () => {

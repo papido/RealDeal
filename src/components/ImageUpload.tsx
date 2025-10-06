@@ -1,12 +1,12 @@
 import { getFilePath } from "@/services/imageService";
-import { ImageUploadProps } from "@/src/types";
+import { ImageUploadProps } from "@/src/constants/types";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Icons from "phosphor-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { scale, verticalScale } from "react-native-size-matters";
-import { colors, radius } from "../constants/theme";
+import { colors } from "../constants/theme";
 
 const ImageUpload = ({
   file = null,

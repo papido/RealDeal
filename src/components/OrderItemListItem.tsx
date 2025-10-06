@@ -1,8 +1,8 @@
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
+import { OrderItem } from "../constants/types";
 import { useCart } from "../providers/CartProvider";
-import { OrderItem } from "../types";
 import { defaultPizzaImage } from "./ProductListItem";
 
 type OrderItemListItemProps = {

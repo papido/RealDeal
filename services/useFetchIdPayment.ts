@@ -1,5 +1,5 @@
 // services/getPaymentByOrderId.ts
-import { PaymentType } from "@/src/types";
+import { PaymentType } from "@/src/constants/types";
 import {
   collection,
   getDocs,
