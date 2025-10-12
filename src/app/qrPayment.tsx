@@ -1,5 +1,5 @@
 import Button from "@/src/components/Button";
-import { useCart } from "@/src/providers/CartProvider";
+import { useCart } from "@/src/contexts/CartProvider";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { FontAwesome } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";

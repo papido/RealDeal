@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useCart } from "../providers/CartProvider";
-import { useAuth } from "../providers/authProvider";
+import { useCart } from "../contexts/CartProvider";
+import { useAuth } from "../contexts/authProvider";
 
 const DELIVERY_RATE_PER_KM = 2.5; // RM 2.50 per km
 // const BASE_DELIVERY_FEE = 0.0; // RM 0.00 base fee

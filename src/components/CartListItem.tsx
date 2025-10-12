@@ -4,7 +4,6 @@ import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
 import { CartItem } from "../constants/types";
-import { useCart } from "../providers/CartProvider";
 import { defaultPizzaImage } from "./ProductListItem";
 dayjs.extend(relativeTime);
 
@@ -13,7 +12,6 @@ type CartListItemProps = {
 };
 
 const CartListItem = ({ cartItem }: CartListItemProps) => {
-  const { updateQuantity } = useCart();
   return (
     <View style={styles.container}>
       <Image

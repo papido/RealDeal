@@ -1,4 +1,4 @@
-import CartProvider from "@/src/providers/CartProvider";
+import CartProvider from "@/src/contexts/CartProvider";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import { FontAwesome, SimpleLineIcons } from "@expo/vector-icons";
 import "config/firebase.ts";
@@ -8,8 +8,9 @@ import { router, SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { Alert, TouchableOpacity } from "react-native";
-import { AuthProvider, useAuth } from "../providers/authProvider";
-import { SplashProvider } from "../providers/SplashProvider";
+import { AuthProvider, useAuth } from "../contexts/authProvider";
+import { IngredientsProvider } from "../contexts/IngredientsProvider";
+import { SplashProvider } from "../contexts/SplashProvider";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -114,11 +115,13 @@ const RootLayout = () => {
   return (
     <AuthProvider>
       <CartProvider>
-        <ActionSheetProvider>
-          <SplashProvider>
-            <AppLayout />
-          </SplashProvider>
-        </ActionSheetProvider>
+        <IngredientsProvider>
+          <ActionSheetProvider>
+            <SplashProvider>
+              <AppLayout />
+            </SplashProvider>
+          </ActionSheetProvider>
+        </IngredientsProvider>
       </CartProvider>
     </AuthProvider>
   );

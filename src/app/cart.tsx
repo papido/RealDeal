@@ -1,12 +1,12 @@
-import { useCart } from "@/src/providers/CartProvider";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import CartListItem from "../components/CartListItem";
 import DeliveryPricing from "../components/DeliveryPricing";
 import ExpandableInputs from "../components/ExpandableInputs";
+import IngredientsListItem from "../components/IngredientsListItem";
+import { useIngredients } from "../contexts/IngredientsProvider";
 
 const CartScreen = () => {
-  const { items } = useCart();
+  const { ingredients } = useIngredients();
 
   const [selectedDateTime, setSelectedDateTime] = useState(() => {
     const tomorrow = new Date();
@@ -21,14 +21,14 @@ const CartScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {items.length === 0 ? (
+      {ingredients.length === 0 ? (
         <Text style={styles.emptyCartText}>Your cart is empty.</Text>
       ) : (
         <>
           {/* All Cart Items */}
           <View style={styles.cartList}>
-            {items.map((item, index) => (
-              <CartListItem key={index} cartItem={item} />
+            {ingredients.map((item, index) => (
+              <IngredientsListItem key={index} ingredientsItem={item} />
             ))}
           </View>
 

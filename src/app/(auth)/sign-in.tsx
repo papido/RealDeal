@@ -1,6 +1,6 @@
 import { auth } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
-import { useAuth } from "@/src/providers/authProvider";
+import { useAuth } from "@/src/contexts/authProvider";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
 import React, { useState } from "react";

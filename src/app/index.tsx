@@ -1,5 +1,5 @@
-import { useAuth } from "@/src/providers/authProvider";
-import { useSplash } from "@/src/providers/SplashProvider";
+import { useAuth } from "@/src/contexts/authProvider";
+import { useSplash } from "@/src/contexts/SplashProvider";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, View } from "react-native";

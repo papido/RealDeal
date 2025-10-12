@@ -1,12 +1,11 @@
 import getAnnouncements from "@/services/getAnnouncements";
 import Loading from "@/src/components/Loading";
 import OrderListItem from "@/src/components/OrderListItem";
-import { useAuth } from "@/src/providers/authProvider";
 import { useEffect, useState } from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 
 const OrdersScreen = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   // const { data: orders, loading } = useFetchData<OrderType>("orders", (ref) =>
   //   ref.where("uid", "==", user?.uid).orderBy("createdAt", "desc")
   // );
@@ -27,7 +26,9 @@ const OrdersScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.text}>Breakfast</Text>
+      <Text style={styles.text}>
+        Highlights <Text style={{ color: "gray" }}>{">"}</Text>{" "}
+      </Text>
       {announcements.length > 0 ? (
         <View style={{ maxHeight: 500 }}>
           <FlatList
@@ -36,11 +37,12 @@ const OrdersScreen = () => {
             keyExtractor={(item, index) => item.id ?? index.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 10,
-              borderColor: "gray",
-            }}
             scrollEnabled={true}
+            ItemSeparatorComponent={() => <View style={{ width: 15 }} />}
+            contentContainerStyle={{
+              paddingLeft: 5, // 👈 space before the first item
+              paddingRight: 5, // optional end padding
+            }}
           />
         </View>
       ) : (
@@ -48,7 +50,9 @@ const OrdersScreen = () => {
           <Text style={styles.text}>No orders found</Text>
         </View>
       )}
-      <Text style={styles.text}>Lunch</Text>
+      <Text style={styles.text}>
+        Lunch <Text style={{ color: "gray" }}>{">"}</Text>{" "}
+      </Text>
       {announcements.length > 0 ? (
         <View style={{ maxHeight: 500 }}>
           <FlatList
@@ -57,11 +61,12 @@ const OrdersScreen = () => {
             keyExtractor={(item, index) => item.id ?? index.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 10,
-              borderColor: "gray",
-            }}
             scrollEnabled={true}
+            ItemSeparatorComponent={() => <View style={{ width: 15 }} />}
+            contentContainerStyle={{
+              paddingLeft: 5, // 👈 space before the first item
+              paddingRight: 5, // optional end padding
+            }}
           />
         </View>
       ) : (
@@ -69,7 +74,9 @@ const OrdersScreen = () => {
           <Text style={styles.text}>No orders found</Text>
         </View>
       )}
-      <Text style={styles.text}>Dinner</Text>
+      <Text style={styles.text}>
+        Dinner <Text style={{ color: "gray" }}>{">"}</Text>{" "}
+      </Text>
       {announcements.length > 0 ? (
         <View style={{ maxHeight: 500 }}>
           <FlatList
@@ -78,11 +85,12 @@ const OrdersScreen = () => {
             keyExtractor={(item, index) => item.id ?? index.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 10,
-              borderColor: "gray",
-            }}
             scrollEnabled={true}
+            ItemSeparatorComponent={() => <View style={{ width: 15 }} />}
+            contentContainerStyle={{
+              paddingLeft: 5, // 👈 space before the first item
+              paddingRight: 5, // optional end padding
+            }}
           />
         </View>
       ) : (
@@ -102,7 +110,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   text: {
-    padding: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     fontSize: 20,
     fontWeight: "bold",
   },

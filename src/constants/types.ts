@@ -136,3 +136,12 @@ export type PaymentType = {
   amount?: number;
   id?: string;
 };
+
+export type IngredientsType = {
+  id?: string;
+  name: string;
+  price: number;
+  quantity: number;
+  expiryDate?: Timestamp | null;
+  createdAt?: Timestamp;
+};

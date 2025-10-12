@@ -1,7 +1,7 @@
 import { firestore } from "@/config/firebase";
 import Button from "@/src/components/Button";
-import { useAuth } from "@/src/providers/authProvider";
-import { useCart } from "@/src/providers/CartProvider";
+import { useAuth } from "@/src/contexts/authProvider";
+import { useCart } from "@/src/contexts/CartProvider";
 import * as Location from "expo-location";
 import React, { useState } from "react";
 import {

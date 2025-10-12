@@ -1,7 +1,7 @@
 import { useDeliveryNotifications } from "@/services/useDeliveryNotifications";
 import { Text } from "react-native";
 import Button from "../components/Button";
-import { useAuth } from "../providers/authProvider";
+import { useAuth } from "../contexts/authProvider";
 
 const TestPushNotification = () => {
   const { user } = useAuth();

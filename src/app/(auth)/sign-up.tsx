@@ -1,5 +1,5 @@
 import { colors } from "@/src/constants/theme";
-import { useAuth } from "@/src/providers/authProvider";
+import { useAuth } from "@/src/contexts/authProvider";
 import { router, Stack } from "expo-router";
 import React, { useState } from "react";
 import {
