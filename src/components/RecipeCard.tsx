@@ -1,5 +1,4 @@
 import { colors } from "@/src/constants/theme";
-import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
@@ -9,19 +8,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ProductType } from "../constants/types";
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - 48) / 2;
 
-type ProductListItemProps = {
-  recipe: ProductType;
+// The recipe prop is coming from TheMealDB API, which has a different shape
+// than your internal ProductType. We'll treat it as `any` for now.
+type RecipeCardProps = {
+  recipe: any;
 };
 
-export default function RecipeCard({ recipe }: ProductListItemProps) {
+export default function RecipeCard({ recipe }: RecipeCardProps) {
   const router = useRouter();
   const handleNavigate = () => {
-    router.push(`/(user)/menu/${recipe.id}`);
+    // TheMealDB uses `idMeal` for the recipe ID.
+    router.push(`/(user)/menu/${recipe.idMeal}`);
   };
 
   return (
@@ -32,7 +33,7 @@ export default function RecipeCard({ recipe }: ProductListItemProps) {
     >
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: recipe.images?.[0]?.uri }}
+          source={{ uri: recipe.strMealThumb }}
           style={styles.image}
           contentFit="cover"
           transition={300}
@@ -41,36 +42,10 @@ export default function RecipeCard({ recipe }: ProductListItemProps) {
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={2}>
-          {recipe.name}
+          {recipe.strMeal}
         </Text>
-        {recipe.description && (
-          <Text style={styles.description} numberOfLines={2}>
-            {recipe.description}
-          </Text>
-        )}
-
-        <View style={styles.footer}>
-          {recipe.prepTime && (
-            <View style={styles.timeContainer}>
-              <Ionicons
-                name="time-outline"
-                size={14}
-                color={colors.textLight}
-              />
-              <Text style={styles.timeText}>{recipe.prepTime} min</Text>
-            </View>
-          )}
-          {recipe.portion && (
-            <View style={styles.servingsContainer}>
-              <Ionicons
-                name="people-outline"
-                size={14}
-                color={colors.textLight}
-              />
-              <Text style={styles.servingsText}>{recipe.portion}</Text>
-            </View>
-          )}
-        </View>
+        {/* TheMealDB provides category and area, which we can display here */}
+        <Text style={styles.description}>{recipe.strCategory}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -81,6 +56,8 @@ const styles = StyleSheet.create({
     width: cardWidth,
     backgroundColor: colors.card,
     borderRadius: 16,
+    borderColor: colors.border,
+    borderWidth: 1,
     marginBottom: 16,
     shadowColor: colors.shadow,
     shadowOffset: {
@@ -106,8 +83,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: "700",
-    color: colors.textLight,
+    fontWeight: "600",
+    color: colors.black,
     marginBottom: 4,
     lineHeight: 20,
   },
@@ -116,30 +93,5 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginBottom: 8,
     lineHeight: 16,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  timeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  timeText: {
-    fontSize: 11,
-    color: colors.textLight,
-    marginLeft: 4,
-    fontWeight: "500",
-  },
-  servingsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  servingsText: {
-    fontSize: 11,
-    color: colors.textLight,
-    marginLeft: 4,
-    fontWeight: "500",
   },
 });

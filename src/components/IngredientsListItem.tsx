@@ -39,7 +39,7 @@ const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
         </View>
       </View>
 
-      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, gap: 5 }}>
         {expiryDate ? (
           <Text style={[styles.price, isExpired && styles.expiredText]}>
             Exp: {dayjs(expiryDate).format("DD MMM YYYY")}

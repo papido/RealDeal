@@ -24,7 +24,7 @@ export const getAllIngredients = (onUpdate: any) => {
       }
     );
 
-  return unsubscribe; // call this when unmounting
+  return unsubscribe;
 };
 
 export const createIngredients = async (

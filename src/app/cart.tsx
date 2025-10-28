@@ -1,10 +1,11 @@
+import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import Button from "../components/Button";
 import DeliveryPricing from "../components/DeliveryPricing";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
 import { useIngredients } from "../contexts/IngredientsProvider";
-
 const CartScreen = () => {
   const { ingredients, removeIngredient } = useIngredients();
 
@@ -17,20 +18,37 @@ const CartScreen = () => {
   //   return tomorrow;
   // });
 
+  const handleFindRecipes = () => {
+    const ingredientNames = ingredients.map((i) => i.name).join(",");
+    router.push(`/(user)/menu?ingredients=${ingredientNames}`);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {ingredients.length === 0 ? (
-        <Text style={styles.emptyCartText}>Your cart is empty.</Text>
+        <>
+          <Text style={styles.emptyCartText}>Your cart is empty.</Text>
+          <ExpandableInputs />
+        </>
       ) : (
         <>
           {/* All Cart Items */}
           <View style={styles.cartList}>
             {ingredients.map((item) => (
-              <SwipeToDelete key={item.id} onDelete={() => removeIngredient(item.id)}>
+              <SwipeToDelete
+                key={item.id}
+                onDelete={() => removeIngredient(item.id!)}
+              >
                 <IngredientsListItem ingredientsItem={item} />
               </SwipeToDelete>
             ))}
           </View>
+
+          <Button onPress={handleFindRecipes} style={styles.findRecipesButton}>
+            <Text style={styles.findRecipesButtonText}>
+              Find Recipes with these Ingredients
+            </Text>
+          </Button>
 
           {/* Delivery Scheduler */}
           <View style={styles.checkoutSection}>
@@ -63,7 +81,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontSize: 16,
+    marginBottom: 10,
     color: "#666",
+  },
+  findRecipesButton: {
+    marginVertical: 15,
+    backgroundColor: "#28a745",
+    padding: 15,
+    borderRadius: 8,
   },
   checkoutSection: {
     borderTopWidth: 1,
@@ -79,6 +104,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   checkoutButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  findRecipesButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",

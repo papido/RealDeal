@@ -1,72 +1,85 @@
 import { MealAPI } from "@/services/mealAPI";
-import useFetchData from "@/services/useFetchData";
 import { colors } from "@/src/constants/theme";
-import { ProductType } from "@/src/constants/types";
 import { useDebounce } from "@/src/utils/useDebounce";
 import RecipeCard from "@components/RecipeCard";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 const MenuScreen = () => {
-  const { data: products } = useFetchData<ProductType>("products", (ref) => {
-    return ref.orderBy("createdAt", "desc");
-  });
+  const { ingredients: ingredientsFromCart } = useLocalSearchParams<{
+    ingredients?: string;
+  }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [recipes, setRecipes] = useState<any>([]);
   const [loading, setLoading] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const performSearch = async (query: any) => {
-    // if no search query
-    // if (!query.trim()) {
-    //   const randomMeals = await MealAPI.getRandomMeals(12);
-    //   return randomMeals
-    //     .map((meal) => MealAPI.transformMealData(meal))
-    //     .filter((meal) => meal !== null);
-    // }
+  const performSearch = async (query: string) => {
+    if (!query.trim()) {
+      const randomMeals = await MealAPI.getRandomMeals(12);
+      return randomMeals;
+    }
 
-    // search by name first, then by ingredient if no results
+    // If searching by multiple ingredients, fetch for each and combine.
+    // Note: TheMealDB API doesn't support multi-ingredient search directly.
+    // This approach fetches recipes for the first ingredient.
+    // A more advanced implementation might fetch for all and find intersections.
+    const ingredients = query.split(",");
+    if (ingredients.length > 1) {
+      const ingredientResults = await MealAPI.filterByIngredient(
+        ingredients[0].trim()
+      );
+      return ingredientResults;
+    }
+
+    // Search by name first
     const nameResults = await MealAPI.searchMealsByName(query);
-    let results = nameResults;
+    if (nameResults.length > 0) {
+      return nameResults;
+    }
 
-    // if (results.length === 0) {
-    //   const ingredientResults = await MealAPI.filterByIngredient(query);
-    //   results = ingredientResults;
-    // }
-
-    return results;
-    //   .slice(0, 12)
-    //   .map((meal: any) => MealAPI.transformMealData(meal))
-    //   .filter((meal: any) => meal !== null);
+    // Fallback to search by a single ingredient
+    const ingredientResults = await MealAPI.filterByIngredient(query);
+    return ingredientResults;
   };
 
-  // useEffect(() => {
-  //   const handleSearch = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const results = await performSearch(debouncedSearchQuery);
-  //       setRecipes(results);
-  //     } catch (error) {
-  //       console.error("Error searching:", error);
-  //       setRecipes([]);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+  useEffect(() => {
+    const handleSearch = async () => {
+      setLoading(true);
+      try {
+        // Prioritize ingredients from cart, otherwise use the search bar
+        const query = ingredientsFromCart || debouncedSearchQuery;
+        const results = await performSearch(query);
+        setRecipes(results);
+      } catch (error) {
+        console.error("Error searching:", error);
+        setRecipes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  //   handleSearch();
-  // }, [debouncedSearchQuery]);
+    handleSearch();
+  }, [debouncedSearchQuery, ingredientsFromCart]);
 
   return (
     <View style={styles.container}>
+      {ingredientsFromCart && (
+        <Text style={styles.infoText}>
+          Showing recipes for: {ingredientsFromCart.replace(/,/g, ", ")}
+        </Text>
+      )}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <Ionicons
@@ -98,15 +111,26 @@ const MenuScreen = () => {
         </View>
       </View>
 
-      <FlatList
-        data={products}
-        renderItem={({ item }) => <RecipeCard recipe={item} />}
-        keyExtractor={(item) => item.id!.toString()}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.recipesGrid}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+          style={{ marginTop: 20 }}
+        />
+      ) : (
+        <FlatList
+          data={recipes}
+          renderItem={({ item }) => <RecipeCard recipe={item} />}
+          keyExtractor={(item) => item.idMeal.toString()}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.recipesGrid}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No recipes found.</Text>
+          }
+        />
+      )}
     </View>
   );
 };
@@ -117,6 +141,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  infoText: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    color: colors.textLight,
+    fontStyle: "italic",
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 50,
+    fontSize: 16,
+    color: colors.textLight,
   },
   welcomeCard: {
     alignSelf: "flex-start",
