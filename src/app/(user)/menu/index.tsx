@@ -5,7 +5,7 @@ import { ProductType } from "@/src/constants/types";
 import { useDebounce } from "@/src/utils/useDebounce";
 import RecipeCard from "@components/RecipeCard";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -48,22 +48,22 @@ const MenuScreen = () => {
     //   .filter((meal: any) => meal !== null);
   };
 
-  useEffect(() => {
-    const handleSearch = async () => {
-      setLoading(true);
-      try {
-        const results = await performSearch(debouncedSearchQuery);
-        setRecipes(results);
-      } catch (error) {
-        console.error("Error searching:", error);
-        setRecipes([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const handleSearch = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const results = await performSearch(debouncedSearchQuery);
+  //       setRecipes(results);
+  //     } catch (error) {
+  //       console.error("Error searching:", error);
+  //       setRecipes([]);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    handleSearch();
-  }, [debouncedSearchQuery]);
+  //   handleSearch();
+  // }, [debouncedSearchQuery]);
 
   return (
     <View style={styles.container}>

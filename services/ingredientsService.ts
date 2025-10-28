@@ -58,3 +58,15 @@ export const createIngredients = async (
     return { success: false, msg: error.message };
   }
 };
+
+const ingredientsCollection = firestore().collection("ingredients");
+
+export const deleteIngredient = async (id: string) => {
+  try {
+    console.log("Attempting to delete Firestore ingredient ID:", id);
+    await ingredientsCollection.doc(id).delete();
+    console.log("Successfully deleted ingredient:", id);
+  } catch (error) {
+    console.error("Error deleting ingredient:", error);
+  }
+};

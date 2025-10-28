@@ -8,6 +8,7 @@ import { router, SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { Alert, TouchableOpacity } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
 import { IngredientsProvider } from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
@@ -114,6 +115,7 @@ const RootLayout = () => {
 
   return (
     <AuthProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <CartProvider>
         <IngredientsProvider>
           <ActionSheetProvider>
@@ -123,6 +125,7 @@ const RootLayout = () => {
           </ActionSheetProvider>
         </IngredientsProvider>
       </CartProvider>
+      </GestureHandlerRootView>
     </AuthProvider>
   );
 };

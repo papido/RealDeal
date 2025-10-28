@@ -1,23 +1,21 @@
-import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import DeliveryPricing from "../components/DeliveryPricing";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
+import SwipeToDelete from "../components/SwipeToDelete";
 import { useIngredients } from "../contexts/IngredientsProvider";
 
 const CartScreen = () => {
-  const { ingredients } = useIngredients();
+  const { ingredients, removeIngredient } = useIngredients();
 
-  const [selectedDateTime, setSelectedDateTime] = useState(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 2);
-    tomorrow.setHours(9, 0, 0, 0); // Default to 9:00 AM
-    return tomorrow;
-  });
-
-  const handleDateTimeChange = (date: Date) => {
-    setSelectedDateTime(date);
-  };
+  // The `selectedDateTime` state and `handleDateTimeChange` function are not currently used.
+  // I've removed them for now, but we can add them back when you implement the DeliveryScheduler.
+  // const [selectedDateTime, setSelectedDateTime] = useState(() => {
+  //   const tomorrow = new Date();
+  //   tomorrow.setDate(tomorrow.getDate() + 2);
+  //   tomorrow.setHours(9, 0, 0, 0); // Default to 9:00 AM
+  //   return tomorrow;
+  // });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -27,8 +25,10 @@ const CartScreen = () => {
         <>
           {/* All Cart Items */}
           <View style={styles.cartList}>
-            {ingredients.map((item, index) => (
-              <IngredientsListItem key={index} ingredientsItem={item} />
+            {ingredients.map((item) => (
+              <SwipeToDelete key={item.id} onDelete={() => removeIngredient(item.id)}>
+                <IngredientsListItem ingredientsItem={item} />
+              </SwipeToDelete>
             ))}
           </View>
 
