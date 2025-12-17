@@ -1,5 +1,5 @@
-import { MealAPI } from "@/services/mealAPI";
 import { colors } from "@/src/constants/theme";
+import { MealAPI } from "@/src/services/mealAPI";
 import { useDebounce } from "@/src/utils/useDebounce";
 import RecipeCard from "@components/RecipeCard";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,12 +41,6 @@ const MenuScreen = () => {
         ingredients[0].trim()
       );
       return ingredientResults;
-    }
-
-    // Search by name first
-    const nameResults = await MealAPI.searchMealsByName(query);
-    if (nameResults.length > 0) {
-      return nameResults;
     }
 
     // Fallback to search by a single ingredient

@@ -1,16 +1,16 @@
 // src/contexts/IngredientsContext.tsx
+import { IngredientsType } from "@/src/constants/types";
 import {
   createIngredients,
   deleteIngredient,
   getAllIngredients,
-} from "@/services/ingredientsService";
-import { IngredientsType } from "@/src/constants/types";
+} from "@/src/services/ingredientsService";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type IngredientsContextType = {
   ingredients: IngredientsType[];
   addIngredient: (ingredient: IngredientsType) => Promise<void>;
-    removeIngredient: (id: string) => Promise<void>;
+  removeIngredient: (id: string) => Promise<void>;
   loading: boolean;
 };
 
@@ -42,13 +42,13 @@ export const IngredientsProvider = ({
 
   const removeIngredient = async (id: string) => {
     setLoading(true);
-    await deleteIngredient(id); 
+    await deleteIngredient(id);
     setLoading(false);
   };
 
   return (
     <IngredientsContext.Provider
-      value={{ ingredients, addIngredient, removeIngredient,loading }}
+      value={{ ingredients, addIngredient, removeIngredient, loading }}
     >
       {children}
     </IngredientsContext.Provider>

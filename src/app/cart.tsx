@@ -46,7 +46,7 @@ const CartScreen = () => {
 
           <Button onPress={handleFindRecipes} style={styles.findRecipesButton}>
             <Text style={styles.findRecipesButtonText}>
-              Find Recipes with these Ingredients
+              Find Recipes With These Ingredients
             </Text>
           </Button>
 

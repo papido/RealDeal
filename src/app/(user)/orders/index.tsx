@@ -1,6 +1,6 @@
-import getAnnouncements from "@/services/getAnnouncements";
 import Loading from "@/src/components/Loading";
 import OrderListItem from "@/src/components/OrderListItem";
+import getAnnouncements from "@/src/services/getAnnouncements";
 import { useEffect, useState } from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 

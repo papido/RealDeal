@@ -1,4 +1,4 @@
-import { useDeliveryNotifications } from "@/services/useDeliveryNotifications";
+import { useDeliveryNotifications } from "@/src/services/useDeliveryNotifications";
 import { Text } from "react-native";
 import Button from "../components/Button";
 import { useAuth } from "../contexts/authProvider";

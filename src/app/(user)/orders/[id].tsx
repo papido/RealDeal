@@ -1,6 +1,6 @@
-import getAnnouncements from "@/services/getAnnouncements";
 import Loading from "@/src/components/Loading";
 import { OrderType } from "@/src/constants/types";
+import getAnnouncements from "@/src/services/getAnnouncements";
 import dayjs from "dayjs";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";

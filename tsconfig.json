@@ -10,7 +10,7 @@
         "./src/components/*"
       ],
       "@assets/*": [
-        "./assets/*"
+        "src/assets/*"
       ]
     },
     "target": "esnext",

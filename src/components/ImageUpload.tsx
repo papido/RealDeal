@@ -1,5 +1,5 @@
-import { getFilePath } from "@/services/imageService";
 import { ImageUploadProps } from "@/src/constants/types";
+import { getFilePath } from "@/src/services/imageService";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Icons from "phosphor-react-native";

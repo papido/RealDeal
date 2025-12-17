@@ -1,5 +1,5 @@
 import { firestore } from "@/config/firebase"; // ✅ Use this
-import { createIngredients } from "@/services/ingredientsService";
+import { createIngredients } from "@/src/services/ingredientsService";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
