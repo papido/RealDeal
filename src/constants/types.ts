@@ -142,6 +142,7 @@ export type IngredientsType = {
   name: string;
   price: number;
   quantity: number;
-  expiryDate?: Timestamp | null;
+  weight: number;
+  unit: string;
   createdAt?: Timestamp;
 };

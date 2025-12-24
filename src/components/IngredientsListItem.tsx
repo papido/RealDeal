@@ -12,48 +12,40 @@ type IngredientsListItemProps = {
 };
 
 const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
-  const expiryDate =
-    ingredientsItem.expiryDate instanceof Timestamp
-      ? ingredientsItem.expiryDate.toDate()
-      : (ingredientsItem.expiryDate ?? null);
-
   const createdAt =
     ingredientsItem.createdAt instanceof Timestamp
       ? ingredientsItem.createdAt.toDate()
       : (ingredientsItem.createdAt ?? null);
 
-  const isExpired =
-    expiryDate !== null && dayjs(expiryDate).isBefore(dayjs(), "day");
-
   return (
     <View style={styles.container}>
-      {/* <Image
-        source={{ uri: cartItem.product.images[0].uri || defaultPizzaImage }}
-        style={styles.image}
-        resizeMode="contain"
-      /> */}
-      <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{ingredientsItem.name}</Text>
+      <View style={styles.infoContainer}>
+        <Text style={styles.title} numberOfLines={1}>
+          {ingredientsItem.name}
+        </Text>
         <View style={styles.subtitleContainer}>
           <Text style={styles.price}>RM{ingredientsItem.price.toFixed(2)}</Text>
+          {createdAt && (
+            <Text style={styles.time}>
+              {" "}
+              · Added {dayjs(createdAt).fromNow()}
+            </Text>
+          )}
         </View>
       </View>
 
-      <View style={{ paddingHorizontal: 20, gap: 5 }}>
-        {expiryDate ? (
-          <Text style={[styles.price, isExpired && styles.expiredText]}>
-            Exp: {dayjs(expiryDate).format("DD MMM YYYY")}
+      <View style={styles.detailsContainer}>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Qty</Text>
+          <Text style={styles.detailValue}>{ingredientsItem.quantity}</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Unit Weight</Text>
+          <Text style={styles.detailValue}>
+            {ingredientsItem.weight}{" "}
+            {ingredientsItem.unit || "g" /* Fallback for old data */}
           </Text>
-        ) : (
-          <Text style={styles.price}>No expiry date</Text>
-        )}
-
-        {createdAt && (
-          <Text style={styles.time}>{dayjs(createdAt).fromNow()}</Text>
-        )}
-      </View>
-      <View style={styles.quantitySelector}>
-        <Text style={styles.quantity}>{ingredientsItem.quantity} grams</Text>
+        </View>
       </View>
     </View>
   );
@@ -63,47 +55,51 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
     borderRadius: 10,
-    flex: 1,
+    padding: 15,
     flexDirection: "row",
     alignItems: "center",
-    paddingLeft: 20,
+    justifyContent: "space-between",
   },
-  image: {
-    width: 75,
-    aspectRatio: 1,
-    alignSelf: "center",
+  infoContainer: {
+    flex: 1,
     marginRight: 10,
   },
   title: {
-    fontWeight: "500",
+    fontWeight: "600",
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 4,
+    color: "#333",
   },
   subtitleContainer: {
     flexDirection: "row",
-    gap: 5,
-  },
-  quantitySelector: {
-    flexDirection: "row",
-    gap: 10,
     alignItems: "center",
-    marginVertical: 10,
-    padding: 20,
-  },
-  quantity: {
-    fontWeight: "500",
-    fontSize: 18,
   },
   price: {
     color: colors.light.text,
     fontWeight: "bold",
-  },
-  expiredText: {
-    color: "red",
-    fontWeight: "bold",
+    fontSize: 14,
   },
   time: {
     color: "gray",
+    fontSize: 12,
+    marginLeft: 5,
+  },
+  detailsContainer: {
+    flexDirection: "row",
+    gap: 15,
+  },
+  detailItem: {
+    alignItems: "center",
+    gap: 2,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: "#666",
+  },
+  detailValue: {
+    fontWeight: "500",
+    fontSize: 16,
+    color: "#333",
   },
 });
 

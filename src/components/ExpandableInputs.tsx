@@ -1,10 +1,9 @@
-import { firestore } from "@/config/firebase"; // ✅ Use this
 import { createIngredients } from "@/src/services/ingredientsService";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { convertIngredient, Unit } from "@/src/utils/unitConverter";
+import { useActionSheet } from "@expo/react-native-action-sheet";
 import React, { useState } from "react";
 import {
   Alert,
-  Modal,
   StyleSheet,
   Text,
   TextInput,
@@ -17,20 +16,31 @@ const ExpandableInputs = () => {
   const [showInputs, setShowInputs] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState("");
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const { showActionSheetWithOptions } = useActionSheet();
 
   const [ingredients, setIngredients] = useState({
     name: "",
     price: "",
     quantity: "",
-    expiryDate: null as Date | null,
+    weight: "",
+    unit: "g",
   });
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    if (selectedDate) {
-      setIngredients((prev) => ({ ...prev, expiryDate: selectedDate }));
-    }
-    setShowDatePicker(false);
+  const onSelectUnit = () => {
+    const options = ["g", "kg", "ml", "l", "oz", "gallon", "each", "Cancel"];
+    const cancelButtonIndex = options.length - 1;
+
+    showActionSheetWithOptions(
+      { options, cancelButtonIndex, title: "Select a unit" },
+      (selectedIndex?: number) => {
+        if (
+          selectedIndex !== undefined &&
+          selectedIndex !== cancelButtonIndex
+        ) {
+          setIngredients({ ...ingredients, unit: options[selectedIndex] });
+        }
+      }
+    );
   };
 
   const onSubmit = async () => {
@@ -45,23 +55,31 @@ const ExpandableInputs = () => {
       return;
     }
 
-    // ✅ Fix: Correct timestamp creation
-    const formattedExpiry = ingredients.expiryDate
-      ? firestore.Timestamp.fromDate(ingredients.expiryDate)
-      : null;
-
     setLoading(true);
+
+    const { weight: convertedWeight, unit: convertedUnit } = convertIngredient(
+      Number(ingredients.weight),
+      ingredients.unit as Unit
+    );
+
     const res = await createIngredients({
       name: ingredients.name.trim(),
       price: Number(ingredients.price),
       quantity: Number(ingredients.quantity),
-      expiryDate: formattedExpiry,
+      weight: convertedWeight,
+      unit: convertedUnit,
     });
     setLoading(false);
 
     if (res?.success) {
       Alert.alert("Success", "Ingredient created successfully!");
-      setIngredients({ name: "", price: "", quantity: "", expiryDate: null });
+      setIngredients({
+        name: "",
+        price: "",
+        quantity: "",
+        weight: "",
+        unit: "g",
+      });
       setShowInputs(false);
     } else {
       Alert.alert("Error", res?.msg || "Failed to create ingredient.");
@@ -88,7 +106,7 @@ const ExpandableInputs = () => {
             }
           />
           <TextInput
-            placeholder="Price"
+            placeholder="Price (RM)"
             style={styles.input}
             keyboardType="numeric"
             value={ingredients.price}
@@ -105,43 +123,20 @@ const ExpandableInputs = () => {
               setIngredients({ ...ingredients, quantity: text })
             }
           />
-
-          {/* ✅ Clean date picker UX */}
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={[styles.input, { justifyContent: "center" }]}
-          >
-            <Text>
-              {ingredients.expiryDate
-                ? ingredients.expiryDate.toDateString()
-                : "Select Expiry Date (optional)"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* ✅ Use a modal so picker doesn’t show at the bottom */}
-          <Modal
-            transparent
-            visible={showDatePicker}
-            animationType="fade"
-            onRequestClose={() => setShowDatePicker(false)}
-          >
-            <View style={styles.modalContainer}>
-              <View style={styles.datePickerBox}>
-                <DateTimePicker
-                  value={ingredients.expiryDate || new Date()}
-                  mode="date"
-                  display="spinner"
-                  onChange={onChangeDate}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowDatePicker(false)}
-                  style={styles.doneButton}
-                >
-                  <Text style={styles.doneText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
+          <View style={styles.weightContainer}>
+            <TextInput
+              placeholder="Weight"
+              style={[styles.input, styles.weightInput]}
+              keyboardType="numeric"
+              value={ingredients.weight}
+              onChangeText={(text) =>
+                setIngredients({ ...ingredients, weight: text })
+              }
+            />
+            <TouchableOpacity style={styles.unitButton} onPress={onSelectUnit}>
+              <Text style={styles.unitButtonText}>{ingredients.unit}</Text>
+            </TouchableOpacity>
+          </View>
 
           {!!errors && <Text style={styles.errorText}>{errors}</Text>}
 
@@ -187,6 +182,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: "100%",
   },
+  weightContainer: {
+    flexDirection: "row",
+    width: "100%",
+    alignItems: "center",
+    gap: 8,
+    marginVertical: 5,
+  },
+  weightInput: {
+    flex: 1,
+    marginVertical: 0, // Override vertical margin from .input
+  },
+  unitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+  },
+  unitButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
   minusBtn: { backgroundColor: "#FF3B30", marginTop: 10 },
   updateButton: {
     backgroundColor: "#007bff",
@@ -202,26 +220,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   errorText: { color: "red", marginVertical: 5 },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  datePickerBox: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 10,
-    alignItems: "center",
-  },
-  doneButton: {
-    marginTop: 10,
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  doneText: { color: "white", fontWeight: "600" },
 });
 
 export default ExpandableInputs;

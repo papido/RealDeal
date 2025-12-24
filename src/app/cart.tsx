@@ -1,7 +1,6 @@
 import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Button from "../components/Button";
-import DeliveryPricing from "../components/DeliveryPricing";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
@@ -60,7 +59,7 @@ const CartScreen = () => {
             {/* Delivery Pricing and Checkout */}
             <View style={styles.totalSection}>
               <ExpandableInputs />
-              <DeliveryPricing />
+              {/* <DeliveryPricing /> */}
             </View>
           </View>
         </>

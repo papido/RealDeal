@@ -1,0 +1,53 @@
+export type Unit = "g" | "kg" | "ml" | "l" | "oz" | "gallon" | "each";
+
+// Conversion factors to base units (g for mass, ml for volume)
+const CONVERSION_FACTORS = {
+  // Mass to grams (g)
+  g: 1,
+  kg: 1000,
+
+  // Volume to milliliters (ml)
+  ml: 1,
+  l: 1000,
+  oz: 29.5735, // US fluid ounce
+  gallon: 3785.41, // US liquid gallon
+};
+
+interface ConvertedIngredient {
+  weight: number;
+  unit: string;
+}
+
+/**
+ * Converts ingredient weight to a standard base unit (g or ml).
+ * 'each' unit is passed through without conversion.
+ * @param weight The weight/volume value from user input.
+ * @param unit The unit from user input.
+ * @returns An object with the converted weight and the new base unit.
+ */
+export const convertIngredient = (
+  weight: number,
+  unit: Unit
+): ConvertedIngredient => {
+  if (isNaN(weight)) {
+    // If weight is not a number (e.g., empty input), default to 0.
+    return { weight: 0, unit };
+  }
+
+  switch (unit) {
+    case "kg":
+      return { weight: weight * CONVERSION_FACTORS.kg, unit: "g" };
+    case "l":
+      return { weight: weight * CONVERSION_FACTORS.l, unit: "ml" };
+    case "oz":
+      return { weight: weight * CONVERSION_FACTORS.oz, unit: "ml" };
+    case "gallon":
+      return { weight: weight * CONVERSION_FACTORS.gallon, unit: "ml" };
+    case "g":
+    case "ml":
+    case "each":
+      return { weight, unit };
+    default:
+      return { weight, unit };
+  }
+};

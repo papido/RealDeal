@@ -36,7 +36,8 @@ export const createIngredients = async (
       name: ingredientsData.name || "",
       price: ingredientsData.price || 0,
       quantity: ingredientsData.quantity || 0,
-      expiryDate: ingredientsData.expiryDate || null,
+      weight: ingredientsData.weight || 0,
+      unit: ingredientsData.unit || "",
       createdAt: ingredientsData.createdAt || Timestamp.fromDate(new Date()),
     };
 
