@@ -5,6 +5,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
 import { IngredientsType } from "../constants/types";
+import { convertWeightFromBase, Unit } from "../utils/unitConverter";
 dayjs.extend(relativeTime);
 
 type IngredientsListItemProps = {
@@ -16,6 +17,22 @@ const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
     ingredientsItem.createdAt instanceof Timestamp
       ? ingredientsItem.createdAt.toDate()
       : (ingredientsItem.createdAt ?? null);
+
+  // Cast to any to access originalUnit if it's not in the type definition yet
+  const item = ingredientsItem as any;
+  let displayWeight = ingredientsItem.weight;
+  let displayUnit = ingredientsItem.unit || "g";
+
+  if (item.originalUnit) {
+    displayWeight = convertWeightFromBase(
+      ingredientsItem.weight,
+      item.originalUnit as Unit
+    );
+    displayUnit = item.originalUnit;
+  }
+
+  // Format to remove trailing zeros (e.g., 2.00 -> 2) but keep decimals if needed
+  const formattedWeight = Number(displayWeight.toFixed(2));
 
   return (
     <View style={styles.container}>
@@ -42,8 +59,7 @@ const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Unit Weight</Text>
           <Text style={styles.detailValue}>
-            {ingredientsItem.weight}{" "}
-            {ingredientsItem.unit || "g" /* Fallback for old data */}
+            {formattedWeight} {displayUnit}
           </Text>
         </View>
       </View>

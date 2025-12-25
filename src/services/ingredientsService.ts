@@ -31,7 +31,7 @@ export const createIngredients = async (
   ingredientsData: Partial<IngredientsType>
 ): Promise<ResponseType> => {
   try {
-    const ingredientsToSave: IngredientsType = {
+    const ingredientsToSave: any = {
       ...ingredientsData,
       name: ingredientsData.name || "",
       price: ingredientsData.price || 0,

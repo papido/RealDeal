@@ -74,3 +74,21 @@ export const convertIngredient = (
       return { weight, unit };
   }
 };
+
+/**
+ * Converts a weight from base unit (g or ml) back to a specific unit for display.
+ * @param weightInBase The weight in base unit (g or ml).
+ * @param targetUnit The unit to convert back to.
+ * @returns The weight in the target unit.
+ */
+export const convertWeightFromBase = (
+  weightInBase: number,
+  targetUnit: Unit
+): number => {
+  if (targetUnit === "g" || targetUnit === "ml" || targetUnit === "each") {
+    return weightInBase;
+  }
+  const factor =
+    CONVERSION_FACTORS[targetUnit as keyof typeof CONVERSION_FACTORS];
+  return factor ? weightInBase / factor : weightInBase;
+};

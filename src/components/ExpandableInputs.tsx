@@ -107,7 +107,8 @@ const ExpandableInputs = () => {
       quantity: quantity,
       weight: convertedWeight,
       unit: convertedUnit,
-    });
+      originalUnit: ingredients.unit,
+    } as any);
     setLoading(false);
 
     if (res?.success) {
