@@ -146,7 +146,7 @@ const ExpandableInputs = () => {
             }
           />
           <TextInput
-            placeholder="Price (RM)"
+            placeholder="Price"
             style={styles.input}
             keyboardType="numeric"
             value={ingredients.price}
@@ -165,7 +165,7 @@ const ExpandableInputs = () => {
           />
           <View style={styles.weightContainer}>
             <TextInput
-              placeholder="Weight"
+              placeholder="Weight / Individual Count"
               style={[styles.input, styles.weightInput]}
               keyboardType="numeric"
               value={ingredients.weight}
