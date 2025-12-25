@@ -70,7 +70,7 @@ const SignInScreen = () => {
           <Stack.Screen options={{ title: "Sign in" }} />
 
           <Image
-            source={require("@/assets/images/iconImage.png")}
+            source={require("@assets/images/iconImage.png")}
             style={styles.logo}
             resizeMode="contain"
           />

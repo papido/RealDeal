@@ -9,10 +9,10 @@ module.exports = function (api) {
           alias: {
             "@": "./",
             "@components": "./src/components",
-            "@assets": "./assets",
+            "@assets": "./src/assets",
           },
         },
-        "react-native-reanimated/plugin"
+        "react-native-reanimated/plugin",
       ],
     ],
   };

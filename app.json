@@ -4,18 +4,16 @@
     "slug": "RealDeal",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/iconImage.png",
+    "icon": "./src/assets/images/iconImage.png",
     "scheme": "realdeal",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splashImage.png",
+      "image": "./src/assets/images/splashImage.png",
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fauzanafk.RealDeal",
@@ -31,7 +29,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/iconImage.png",
+        "foregroundImage": "./src/assets/images/iconImage.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -48,14 +46,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/iconImage.png"
+          "icon": "./src/assets/images/iconImage.png"
         }
       ],
       [

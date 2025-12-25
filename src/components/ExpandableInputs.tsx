@@ -12,6 +12,28 @@ import {
 } from "react-native";
 import Button from "./Button";
 
+const translateToEnglish = async (text: string) => {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(
+    text
+  )}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return text;
+
+    const data = await response.json();
+    const translatedText =
+      Array.isArray(data?.[0]) && data[0].length > 0
+        ? data[0].map((item: any[]) => item?.[0]).join("")
+        : "";
+
+    return translatedText || text;
+  } catch (error) {
+    console.error("Translation failed", error);
+    return text;
+  }
+};
+
 const ExpandableInputs = () => {
   const [showInputs, setShowInputs] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,7 +49,20 @@ const ExpandableInputs = () => {
   });
 
   const onSelectUnit = () => {
-    const options = ["g", "kg", "ml", "l", "oz", "gallon", "each", "Cancel"];
+    const options = [
+      "g",
+      "kg",
+      "lb",
+      "ml",
+      "l",
+      "oz",
+      "fl oz",
+      "qt",
+      "pt",
+      "gallon",
+      "each",
+      "Cancel",
+    ];
     const cancelButtonIndex = options.length - 1;
 
     showActionSheetWithOptions(
@@ -57,15 +92,19 @@ const ExpandableInputs = () => {
 
     setLoading(true);
 
+    const translatedName = await translateToEnglish(ingredients.name.trim());
+    const quantity = Number(ingredients.quantity);
+    const weight = Number(ingredients.weight);
+
     const { weight: convertedWeight, unit: convertedUnit } = convertIngredient(
-      Number(ingredients.weight),
+      weight * quantity,
       ingredients.unit as Unit
     );
 
     const res = await createIngredients({
-      name: ingredients.name.trim(),
+      name: translatedName,
       price: Number(ingredients.price),
-      quantity: Number(ingredients.quantity),
+      quantity: quantity,
       weight: convertedWeight,
       unit: convertedUnit,
     });
