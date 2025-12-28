@@ -1,6 +1,4 @@
-import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import Button from "../components/Button";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
@@ -17,64 +15,65 @@ const CartScreen = () => {
   //   return tomorrow;
   // });
 
-  const handleFindRecipes = () => {
-    const ingredientNames = ingredients.map((i) => i.name).join(",");
-    router.push(`/(user)/menu?ingredients=${ingredientNames}`);
-  };
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {ingredients.length === 0 ? (
-        <>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {ingredients.length === 0 ? (
           <Text style={styles.emptyCartText}>Your cart is empty.</Text>
-          <ExpandableInputs />
-        </>
-      ) : (
-        <>
-          {/* All Cart Items */}
-          <View style={styles.cartList}>
-            {ingredients.map((item) => (
-              <SwipeToDelete
-                key={item.id}
-                onDelete={() => removeIngredient(item.id!)}
-              >
-                <IngredientsListItem ingredientsItem={item} />
-              </SwipeToDelete>
-            ))}
-          </View>
-
-          <Button onPress={handleFindRecipes} style={styles.findRecipesButton}>
-            <Text style={styles.findRecipesButtonText}>
-              Find Recipes With These Ingredients
-            </Text>
-          </Button>
-
-          {/* Delivery Scheduler */}
-          <View style={styles.checkoutSection}>
-            {/*<DeliveryScheduler
-              onDateTimeChange={handleDateTimeChange}
-              initialDate={selectedDateTime}
-            /> */}
-
-            {/* Delivery Pricing and Checkout */}
-            <View style={styles.totalSection}>
-              <ExpandableInputs />
-              {/* <DeliveryPricing /> */}
+        ) : (
+          <>
+            {/* All Cart Items */}
+            <View style={styles.cartList}>
+              {ingredients.map((item) => (
+                <SwipeToDelete
+                  key={item.id}
+                  onDelete={() => removeIngredient(item.id!)}
+                >
+                  <IngredientsListItem ingredientsItem={item} />
+                </SwipeToDelete>
+              ))}
             </View>
-          </View>
-        </>
-      )}
-    </ScrollView>
+
+            {/* Delivery Scheduler */}
+            <View style={styles.checkoutSection}>
+              {/*<DeliveryScheduler
+                onDateTimeChange={handleDateTimeChange}
+                initialDate={selectedDateTime}
+              /> */}
+
+              {/* Delivery Pricing and Checkout */}
+              <View style={styles.totalSection}>
+                {/* <DeliveryPricing /> */}
+              </View>
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      <View style={styles.floatingInputs}>
+        <ExpandableInputs />
+      </View>
+    </View>
   );
 };
 
 export default CartScreen;
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  floatingInputs: {
+    position: "absolute",
+    right: 30,
+    bottom: 80,
+    alignItems: "center",
+  },
   container: {
     padding: 10,
+    paddingBottom: 420,
   },
   cartList: {
-    gap: 10,
+    // gap: 2,
   },
   emptyCartText: {
     textAlign: "center",
@@ -83,12 +82,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#666",
   },
-  findRecipesButton: {
-    marginVertical: 15,
-    backgroundColor: "#28a745",
-    padding: 15,
-    borderRadius: 8,
-  },
+
   checkoutSection: {
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
@@ -103,12 +97,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   checkoutButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  findRecipesButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",

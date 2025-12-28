@@ -48,7 +48,12 @@ export const IngredientsProvider = ({
 
   return (
     <IngredientsContext.Provider
-      value={{ ingredients, addIngredient, removeIngredient, loading }}
+      value={{
+        ingredients,
+        addIngredient,
+        removeIngredient,
+        loading,
+      }}
     >
       {children}
     </IngredientsContext.Provider>

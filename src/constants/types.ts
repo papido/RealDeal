@@ -140,9 +140,10 @@ export type PaymentType = {
 export type IngredientsType = {
   id?: string;
   name: string;
-  price: number;
-  quantity: number;
-  weight: number;
+  price: string;
+  quantity: string;
+  weight: string;
   unit: string;
+  unitPrice: string;
   createdAt?: Timestamp;
 };

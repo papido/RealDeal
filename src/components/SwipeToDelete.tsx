@@ -20,6 +20,8 @@ const SwipeToDelete = ({ children, onDelete }: Props) => {
   const translateX = useSharedValue(0);
 
   const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-10, 10])
     .onUpdate((e) => {
       translateX.value = Math.min(0, e.translationX);
     })

@@ -1,16 +1,23 @@
 import CartProvider from "@/src/contexts/CartProvider";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import { FontAwesome, SimpleLineIcons } from "@expo/vector-icons";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import "config/firebase.ts";
 import * as Font from "expo-font";
 import * as Notifications from "expo-notifications";
 import { router, SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { Alert, TouchableOpacity } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StyleSheet, Text } from "react-native";
+import {
+  GestureHandlerRootView,
+  Pressable,
+} from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
-import { IngredientsProvider } from "../contexts/IngredientsProvider";
+import {
+  IngredientsProvider,
+  useIngredients,
+} from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
 
 Notifications.setNotificationHandler({
@@ -29,6 +36,12 @@ SplashScreen.preventAutoHideAsync();
 const AppLayout = () => {
   const { user } = useAuth(); // Now this is within AuthProvider
   const isLoggedIn = !!user;
+  const { ingredients, removeIngredient } = useIngredients();
+
+  const handleFindRecipes = () => {
+    const ingredientNames = ingredients.map((i) => i.name).join(",");
+    router.push(`/(user)/menu?ingredients=${ingredientNames}`);
+  };
 
   return (
     <>
@@ -43,9 +56,22 @@ const AppLayout = () => {
         </Stack.Protected>
         <Stack.Screen
           name="cart"
-          options={{ title: "Cart", presentation: "modal" }}
+          options={{
+            title: "Cart",
+            presentation: "modal",
+            headerRight: () => (
+              <Pressable
+                onPress={handleFindRecipes}
+                style={styles.findRecipesButton}
+              >
+                <Text style={styles.findRecipesButtonText}>
+                  Find Recipes With These Ingredients
+                </Text>
+              </Pressable>
+            ),
+          }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="qrPayment"
           options={{
             title: "Order Summary & Payment",
@@ -81,7 +107,7 @@ const AppLayout = () => {
               </TouchableOpacity>
             ),
           }}
-        />
+        /> */}
       </Stack>
     </>
   );
@@ -116,18 +142,35 @@ const RootLayout = () => {
   return (
     <AuthProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-      <CartProvider>
-        <IngredientsProvider>
-          <ActionSheetProvider>
-            <SplashProvider>
-              <AppLayout />
-            </SplashProvider>
-          </ActionSheetProvider>
-        </IngredientsProvider>
-      </CartProvider>
+        <ActionSheetProvider>
+          <BottomSheetModalProvider>
+            <CartProvider>
+              <IngredientsProvider>
+                <SplashProvider>
+                  <AppLayout />
+                </SplashProvider>
+              </IngredientsProvider>
+            </CartProvider>
+          </BottomSheetModalProvider>
+        </ActionSheetProvider>
       </GestureHandlerRootView>
     </AuthProvider>
   );
 };
 
 export default RootLayout;
+
+const styles = StyleSheet.create({
+  findRecipesButton: {
+    marginVertical: 10,
+    backgroundColor: "#28a745",
+    padding: 5,
+    borderRadius: 8,
+  },
+  findRecipesButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+});

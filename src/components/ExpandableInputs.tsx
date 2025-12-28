@@ -1,7 +1,8 @@
 import { createIngredients } from "@/src/services/ingredientsService";
 import { convertIngredient, Unit } from "@/src/utils/unitConverter";
 import { useActionSheet } from "@expo/react-native-action-sheet";
-import React, { useState } from "react";
+import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Alert,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { IngredientsType } from "../constants/types";
 import Button from "./Button";
 
 const translateToEnglish = async (text: string) => {
@@ -35,18 +37,40 @@ const translateToEnglish = async (text: string) => {
 };
 
 const ExpandableInputs = () => {
-  const [showInputs, setShowInputs] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState("");
   const { showActionSheetWithOptions } = useActionSheet();
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["45%"], []);
 
-  const [ingredients, setIngredients] = useState({
+  const [ingredients, setIngredients] = useState<IngredientsType>({
     name: "",
     price: "",
     quantity: "",
     weight: "",
     unit: "g",
+    unitPrice: "",
   });
+
+  const calculateUnitPrice = (
+    price: string | number,
+    weight: string | number,
+    quantity: string | number
+  ) => {
+    const p = Number(price);
+    const w = Number(weight);
+    const q = Number(quantity);
+
+    if (p > 0 && w > 0 && q > 0) {
+      return (p / (w * q)).toFixed(2);
+    }
+  };
+
+  const unitPrice = calculateUnitPrice(
+    ingredients.price,
+    ingredients.weight,
+    ingredients.quantity
+  );
 
   const onSelectUnit = () => {
     const options = [
@@ -59,7 +83,7 @@ const ExpandableInputs = () => {
       "fl oz",
       "qt",
       "pt",
-      "gallon",
+      "gal",
       "each",
       "Cancel",
     ];
@@ -72,7 +96,17 @@ const ExpandableInputs = () => {
           selectedIndex !== undefined &&
           selectedIndex !== cancelButtonIndex
         ) {
-          setIngredients({ ...ingredients, unit: options[selectedIndex] });
+          const selectedUnit = options[selectedIndex];
+          setIngredients((prev) => ({
+            ...prev,
+            unit: selectedUnit,
+            quantity:
+              selectedUnit === "each"
+                ? "1"
+                : prev.unit === "each"
+                  ? ""
+                  : prev.quantity,
+          }));
         }
       }
     );
@@ -108,6 +142,7 @@ const ExpandableInputs = () => {
       weight: convertedWeight,
       unit: convertedUnit,
       originalUnit: ingredients.unit,
+      unitPrice: unitPrice,
     } as any);
     setLoading(false);
 
@@ -119,8 +154,9 @@ const ExpandableInputs = () => {
         quantity: "",
         weight: "",
         unit: "g",
+        unitPrice: "",
       });
-      setShowInputs(false);
+      sheetRef.current?.dismiss();
     } else {
       Alert.alert("Error", res?.msg || "Failed to create ingredient.");
     }
@@ -128,15 +164,28 @@ const ExpandableInputs = () => {
 
   return (
     <View style={styles.container}>
-      {!showInputs ? (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setShowInputs(true)}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => sheetRef.current?.present()}
+      >
+        <Text style={styles.symbol}>+</Text>
+      </TouchableOpacity>
+
+      <BottomSheetModal
+        ref={sheetRef}
+        index={0}
+        snapPoints={snapPoints}
+        enableDynamicSizing={false}
+        enablePanDownToClose
+        enableOverDrag={false}
+        backgroundStyle={styles.sheetBackground}
+        handleStyle={styles.sheetHandle}
+        handleIndicatorStyle={styles.sheetHandleIndicator}
+      >
+        <BottomSheetScrollView
+          contentContainerStyle={styles.inputsContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.symbol}>+</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.inputsContainer}>
           <TextInput
             placeholder="Name"
             style={styles.input}
@@ -154,18 +203,12 @@ const ExpandableInputs = () => {
               setIngredients({ ...ingredients, price: text })
             }
           />
-          <TextInput
-            placeholder="Quantity"
-            style={styles.input}
-            keyboardType="numeric"
-            value={ingredients.quantity}
-            onChangeText={(text) =>
-              setIngredients({ ...ingredients, quantity: text })
-            }
-          />
           <View style={styles.weightContainer}>
             <TextInput
-              placeholder="Weight / Individual Count"
+              placeholder={
+                "Total Weight / Total individual count if\nthere's no weight (use each)"
+              }
+              multiline={true}
               style={[styles.input, styles.weightInput]}
               keyboardType="numeric"
               value={ingredients.weight}
@@ -177,6 +220,22 @@ const ExpandableInputs = () => {
               <Text style={styles.unitButtonText}>{ingredients.unit}</Text>
             </TouchableOpacity>
           </View>
+          {unitPrice && (
+            <Text
+              style={styles.unitPrice}
+            >{`$${unitPrice} / ${ingredients.unit}`}</Text>
+          )}
+          {ingredients.unit !== "each" && (
+            <TextInput
+              placeholder="Quantity"
+              style={styles.input}
+              keyboardType="numeric"
+              value={ingredients.quantity}
+              onChangeText={(text) =>
+                setIngredients({ ...ingredients, quantity: text })
+              }
+            />
+          )}
 
           {!!errors && <Text style={styles.errorText}>{errors}</Text>}
 
@@ -191,12 +250,12 @@ const ExpandableInputs = () => {
 
           <TouchableOpacity
             style={[styles.button, styles.minusBtn]}
-            onPress={() => setShowInputs(false)}
+            onPress={() => sheetRef.current?.dismiss()}
           >
             <Text style={styles.symbol}>−</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        </BottomSheetScrollView>
+      </BottomSheetModal>
     </View>
   );
 };
@@ -213,10 +272,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   symbol: { fontSize: 28, color: "#fff", fontWeight: "bold" },
-  inputsContainer: { width: "80%", alignItems: "center" },
+  inputsContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
+    backgroundColor: "#fff",
     padding: 10,
     marginVertical: 5,
     borderRadius: 8,
@@ -234,12 +299,14 @@ const styles = StyleSheet.create({
     marginVertical: 0, // Override vertical margin from .input
   },
   unitButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 10,
+    paddingVertical: 16,
+    backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
+    width: 60,
+    alignItems: "center",
   },
   unitButtonText: {
     fontSize: 16,
@@ -260,6 +327,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   errorText: { color: "red", marginVertical: 5 },
+  unitPrice: {
+    width: "100%",
+    textAlign: "right",
+    color: "gray",
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  sheetBackground: {
+    backgroundColor: "#f0f0f0",
+  },
+  sheetHandle: {
+    height: 40,
+  },
+  sheetHandleIndicator: {
+    width: 50,
+    height: 6,
+  },
 });
 
 export default ExpandableInputs;
