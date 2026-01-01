@@ -33,6 +33,7 @@ const ProductItemForm = () => {
               setProduct({ ...product, items: updatedItems });
             }}
             placeholder="Item name"
+            placeholderTextColor="#999"
             style={styles.input}
           />
           <TextInput
@@ -46,6 +47,7 @@ const ProductItemForm = () => {
               setProduct({ ...product, items: updatedItems });
             }}
             placeholder="Price"
+            placeholderTextColor="#999"
             style={styles.input}
             keyboardType="numeric"
           />

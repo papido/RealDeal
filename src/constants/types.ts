@@ -147,3 +147,10 @@ export type IngredientsType = {
   unitPrice: string;
   createdAt?: Timestamp;
 };
+
+export type ParsedIngredient = {
+  quantity: number | string | null;
+  unit: string | null;
+  ingredient: string;
+  language: "en" | "bm";
+};

@@ -188,6 +188,7 @@ const ExpandableInputs = () => {
         >
           <TextInput
             placeholder="Name"
+            placeholderTextColor="#999"
             style={styles.input}
             value={ingredients.name}
             onChangeText={(text) =>
@@ -196,6 +197,7 @@ const ExpandableInputs = () => {
           />
           <TextInput
             placeholder="Price"
+            placeholderTextColor="#999"
             style={styles.input}
             keyboardType="numeric"
             value={ingredients.price}
@@ -208,6 +210,7 @@ const ExpandableInputs = () => {
               placeholder={
                 "Total Weight / Total individual count if\nthere's no weight (use each)"
               }
+              placeholderTextColor="#999"
               multiline={true}
               style={[styles.input, styles.weightInput]}
               keyboardType="numeric"
@@ -228,6 +231,7 @@ const ExpandableInputs = () => {
           {ingredients.unit !== "each" && (
             <TextInput
               placeholder="Quantity"
+              placeholderTextColor="#999"
               style={styles.input}
               keyboardType="numeric"
               value={ingredients.quantity}
@@ -269,7 +273,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
   },
   symbol: { fontSize: 28, color: "#fff", fontWeight: "bold" },
   inputsContainer: {
@@ -312,7 +315,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-  minusBtn: { backgroundColor: "#FF3B30", marginTop: 10 },
+  minusBtn: { backgroundColor: "#FF3B30" },
   updateButton: {
     backgroundColor: "#007bff",
     padding: 15,

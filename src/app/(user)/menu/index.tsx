@@ -1,5 +1,4 @@
 import { colors } from "@/src/constants/theme";
-import { MealAPI } from "@/src/services/mealAPI";
 import { useDebounce } from "@/src/utils/useDebounce";
 import RecipeCard from "@components/RecipeCard";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,31 +21,9 @@ const MenuScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [recipes, setRecipes] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const performSearch = async (query: string) => {
-    if (!query.trim()) {
-      const randomMeals = await MealAPI.getRandomMeals(12);
-      return randomMeals;
-    }
-
-    // If searching by multiple ingredients, fetch for each and combine.
-    // Note: TheMealDB API doesn't support multi-ingredient search directly.
-    // This approach fetches recipes for the first ingredient.
-    // A more advanced implementation might fetch for all and find intersections.
-    const ingredients = query.split(",");
-    if (ingredients.length > 1) {
-      const ingredientResults = await MealAPI.filterByIngredient(
-        ingredients[0].trim()
-      );
-      return ingredientResults;
-    }
-
-    // Fallback to search by a single ingredient
-    const ingredientResults = await MealAPI.filterByIngredient(query);
-    return ingredientResults;
-  };
+  const performSearch = async (query: string) => {};
 
   useEffect(() => {
     const handleSearch = async () => {
@@ -54,7 +31,7 @@ const MenuScreen = () => {
       try {
         // Prioritize ingredients from cart, otherwise use the search bar
         const query = ingredientsFromCart || debouncedSearchQuery;
-        const results = await performSearch(query);
+        const results = performSearch(query);
         setRecipes(results);
       } catch (error) {
         console.error("Error searching:", error);
