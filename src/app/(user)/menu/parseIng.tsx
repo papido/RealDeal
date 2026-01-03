@@ -1,4 +1,5 @@
-import { parseLine } from "@/src/utils/bmParser";
+import { parseBMLine } from "@/src/utils/bmParser";
+import { parseENLine } from "@/src/utils/enParser";
 import React, { JSX, useMemo, useState } from "react";
 import {
   Button,
@@ -25,6 +26,7 @@ export default function IngredientParser(): JSX.Element {
   const [parsedIngredients, setParsedIngredients] = useState<
     ParsedIngredient[]
   >([]);
+  const [parserLang, setParserLang] = useState<"bm" | "en">("bm");
 
   // inline edit state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -41,7 +43,8 @@ export default function IngredientParser(): JSX.Element {
 
   const handleParse = (): void => {
     // If parseLine already returns a well-typed object, you can remove the cast
-    const parsed = lines.map((line) => parseLine(line) as ParsedIngredient);
+    const parser = parserLang === "en" ? parseENLine : parseBMLine;
+    const parsed = lines.map((line) => parser(line) as ParsedIngredient);
     setParsedIngredients(parsed);
     setEditingIndex(null);
     setDraftIngredient("");
@@ -101,6 +104,39 @@ export default function IngredientParser(): JSX.Element {
             setDraftIngredient("");
           }}
         />
+      </View>
+
+      <View style={{ flexDirection: "row", marginBottom: 12, gap: 8 }}>
+        <Pressable
+          onPress={() => setParserLang("bm")}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: parserLang === "bm" ? "#111" : "#ccc",
+            backgroundColor: parserLang === "bm" ? "#111" : "transparent",
+          }}
+        >
+          <Text style={{ color: parserLang === "bm" ? "#fff" : "#111" }}>
+            BM
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setParserLang("en")}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: parserLang === "en" ? "#111" : "#ccc",
+            backgroundColor: parserLang === "en" ? "#111" : "transparent",
+          }}
+        >
+          <Text style={{ color: parserLang === "en" ? "#fff" : "#111" }}>
+            EN
+          </Text>
+        </Pressable>
       </View>
 
       <FlatList<ParsedIngredient>
