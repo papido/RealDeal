@@ -5,7 +5,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
 import { IngredientsType } from "../constants/types";
-import { convertWeightFromBase, Unit } from "../utils/unitConverter";
+import { convertWeightFromBase, Unit } from "../utils/invUnitConverter";
 dayjs.extend(relativeTime);
 
 type IngredientsListItemProps = {

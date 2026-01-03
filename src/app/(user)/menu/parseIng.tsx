@@ -1,5 +1,5 @@
-import { parseLine } from "@/src/utils/parsers";
-import React, { useState } from "react";
+import { parseLine } from "@/src/utils/bmParser";
+import React, { JSX, useMemo, useState } from "react";
 import {
   Button,
   FlatList,
@@ -9,19 +9,67 @@ import {
   View,
 } from "react-native";
 
-export default function IngredientParser() {
-  const [rawText, setRawText] = useState("");
-  const [parsedIngredients, setParsedIngredients] = useState([]);
+type ParsedIngredient = {
+  quantity?: string | null;
+  unit?: string | null;
+  ingredient?: string | null;
+};
 
-  const handleParse = () => {
-    const lines = rawText.split("\n").filter((l) => l.trim());
-    setParsedIngredients(lines.map(parseLine));
+type EditableField = keyof Pick<
+  ParsedIngredient,
+  "quantity" | "unit" | "ingredient"
+>;
+
+export default function IngredientParser(): JSX.Element {
+  const [rawText, setRawText] = useState<string>("");
+  const [parsedIngredients, setParsedIngredients] = useState<
+    ParsedIngredient[]
+  >([]);
+
+  // inline edit state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [draftIngredient, setDraftIngredient] = useState<string>("");
+
+  const lines = useMemo(
+    () =>
+      rawText
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean),
+    [rawText]
+  );
+
+  const handleParse = (): void => {
+    // If parseLine already returns a well-typed object, you can remove the cast
+    const parsed = lines.map((line) => parseLine(line) as ParsedIngredient);
+    setParsedIngredients(parsed);
+    setEditingIndex(null);
+    setDraftIngredient("");
   };
 
-  const editIngredient = (index, field, value) => {
-    const updated = [...parsedIngredients];
-    updated[index][field] = value;
-    setParsedIngredients(updated);
+  const editIngredient = (
+    index: number,
+    field: EditableField,
+    value: string
+  ): void => {
+    setParsedIngredients((prev) => {
+      const updated = [...prev];
+      const current = updated[index] ?? {};
+      updated[index] = { ...current, [field]: value };
+      return updated;
+    });
+  };
+
+  const startEdit = (index: number): void => {
+    setEditingIndex(index);
+    setDraftIngredient(parsedIngredients[index]?.ingredient ?? "");
+  };
+
+  const doneEdit = (): void => {
+    if (editingIndex === null) return;
+    editIngredient(editingIndex, "ingredient", draftIngredient);
+    setEditingIndex(null);
+    setDraftIngredient("");
   };
 
   return (
@@ -33,6 +81,7 @@ export default function IngredientParser() {
           padding: 12,
           height: 120,
           marginBottom: 12,
+          textAlignVertical: "top",
         }}
         multiline
         placeholder="Paste ingredients here…"
@@ -43,45 +92,83 @@ export default function IngredientParser() {
       <View style={{ flexDirection: "row", marginBottom: 12 }}>
         <Button title="Parse" onPress={handleParse} />
         <View style={{ width: 12 }} />
-        <Button title="Clear" onPress={() => setRawText("")} />
+        <Button
+          title="Clear"
+          onPress={() => {
+            setRawText("");
+            setParsedIngredients([]);
+            setEditingIndex(null);
+            setDraftIngredient("");
+          }}
+        />
       </View>
 
-      <FlatList
+      <FlatList<ParsedIngredient>
         data={parsedIngredients}
         keyExtractor={(_, i) => i.toString()}
-        renderItem={({ item, index }) => (
-          <View
-            style={{
-              flexDirection: "row",
-              marginBottom: 8,
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text>{item.quantity || "?"}</Text>
-            <Text>{item.unit || "?"}</Text>
-            <Text>{item.ingredient || "?"}</Text>
-            <Pressable
-              onPress={() => {
-                const newIngredient = prompt(
-                  "Edit ingredient",
-                  item.ingredient
-                );
-                if (newIngredient)
-                  editIngredient(index, "ingredient", newIngredient);
+        renderItem={({ item, index }) => {
+          const isEditing = editingIndex === index;
+
+          return (
+            <View
+              style={{
+                flexDirection: "row",
+                marginBottom: 8,
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
               }}
             >
-              <Text style={{ color: "blue" }}>✏️</Text>
-            </Pressable>
-          </View>
-        )}
+              <Text style={{ width: 60 }}>{item.quantity ?? "?"}</Text>
+              <Text style={{ width: 60 }}>{item.unit ?? "?"}</Text>
+
+              {isEditing ? (
+                <TextInput
+                  style={{
+                    flex: 1,
+                    borderWidth: 1,
+                    borderColor: "#ccc",
+                    paddingHorizontal: 8,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                  }}
+                  value={draftIngredient}
+                  onChangeText={setDraftIngredient}
+                  placeholder="Ingredient"
+                  autoFocus
+                  onSubmitEditing={doneEdit}
+                  returnKeyType="done"
+                />
+              ) : (
+                <Text style={{ flex: 1 }}>{item.ingredient ?? "?"}</Text>
+              )}
+
+              {isEditing ? (
+                <Pressable onPress={doneEdit}>
+                  <Text style={{ color: "blue" }}>Done</Text>
+                </Pressable>
+              ) : (
+                <Pressable onPress={() => startEdit(index)}>
+                  <Text style={{ color: "blue" }}>✏️</Text>
+                </Pressable>
+              )}
+            </View>
+          );
+        }}
       />
 
       <Button
         title="Save"
-        onPress={() =>
-          console.log("Saved parsed ingredients", parsedIngredients)
-        }
+        onPress={() => {
+          const cleanIngredients = parsedIngredients.map(
+            ({ quantity, unit, ingredient }) => ({
+              quantity,
+              unit,
+              ingredient,
+            })
+          );
+          console.log("Saved parsed ingredients", cleanIngredients);
+        }}
       />
     </View>
   );

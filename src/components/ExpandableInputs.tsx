@@ -1,5 +1,5 @@
 import { createIngredients } from "@/src/services/ingredientsService";
-import { convertIngredient, Unit } from "@/src/utils/unitConverter";
+import { convertIngredient, Unit } from "@/src/utils/invUnitConverter";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useMemo, useRef, useState } from "react";
