@@ -39,6 +39,7 @@ export default function MenuStack() {
       }}
     >
       <Stack.Screen name="index" options={{ title: "Menu" }} />
+      <Stack.Screen name="parseIng" options={{ title: "Parse Ingredients" }} />
     </Stack>
   );
 }

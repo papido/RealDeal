@@ -1,3 +1,4 @@
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
@@ -16,44 +17,46 @@ const CartScreen = () => {
   // });
 
   return (
-    <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {ingredients.length === 0 ? (
-          <Text style={styles.emptyCartText}>Your cart is empty.</Text>
-        ) : (
-          <>
-            {/* All Cart Items */}
-            <View style={styles.cartList}>
-              {ingredients.map((item) => (
-                <SwipeToDelete
-                  key={item.id}
-                  onDelete={() => removeIngredient(item.id!)}
-                >
-                  <IngredientsListItem ingredientsItem={item} />
-                </SwipeToDelete>
-              ))}
-            </View>
+    <BottomSheetModalProvider>
+      <View style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.container}>
+          {ingredients.length === 0 ? (
+            <Text style={styles.emptyCartText}>Your cart is empty.</Text>
+          ) : (
+            <>
+              {/* All Cart Items */}
+              <View style={styles.cartList}>
+                {ingredients.map((item) => (
+                  <SwipeToDelete
+                    key={item.id}
+                    onDelete={() => removeIngredient(item.id!)}
+                  >
+                    <IngredientsListItem ingredientsItem={item} />
+                  </SwipeToDelete>
+                ))}
+              </View>
 
-            {/* Delivery Scheduler */}
-            <View style={styles.checkoutSection}>
-              {/*<DeliveryScheduler
+              {/* Delivery Scheduler */}
+              <View style={styles.checkoutSection}>
+                {/*<DeliveryScheduler
                 onDateTimeChange={handleDateTimeChange}
                 initialDate={selectedDateTime}
               /> */}
 
-              {/* Delivery Pricing and Checkout */}
-              <View style={styles.totalSection}>
-                {/* <DeliveryPricing /> */}
+                {/* Delivery Pricing and Checkout */}
+                <View style={styles.totalSection}>
+                  {/* <DeliveryPricing /> */}
+                </View>
               </View>
-            </View>
-          </>
-        )}
-      </ScrollView>
+            </>
+          )}
+        </ScrollView>
 
-      <View style={styles.floatingInputs}>
-        <ExpandableInputs />
+        <View style={styles.floatingInputs}>
+          <ExpandableInputs />
+        </View>
       </View>
-    </View>
+    </BottomSheetModalProvider>
   );
 };
 

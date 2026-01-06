@@ -71,43 +71,6 @@ const AppLayout = () => {
             ),
           }}
         />
-        {/* <Stack.Screen
-          name="qrPayment"
-          options={{
-            title: "Order Summary & Payment",
-            presentation: "modal",
-            headerLeft: () => null,
-            headerBackVisible: false,
-            headerRight: ({ tintColor }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    "Are you sure?",
-                    "Do you want to cancel the order?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Yes",
-                        onPress: () => {
-                          router.replace("/");
-                        },
-                        style: "destructive",
-                      },
-                    ],
-                    { cancelable: true }
-                  );
-                }}
-                style={{ marginRight: 15 }}
-              >
-                <FontAwesome
-                  name="close"
-                  size={24}
-                  color={tintColor || "black"}
-                />
-              </TouchableOpacity>
-            ),
-          }}
-        /> */}
       </Stack>
     </>
   );
