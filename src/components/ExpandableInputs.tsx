@@ -41,7 +41,7 @@ const ExpandableInputs = () => {
   const [errors, setErrors] = useState("");
   const { showActionSheetWithOptions } = useActionSheet();
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["45%"], []);
+  const snapPoints = useMemo(() => ["55%"], []);
 
   const [ingredients, setIngredients] = useState<IngredientsType>({
     name: "",
