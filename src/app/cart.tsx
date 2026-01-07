@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     paddingBottom: 420,
   },
   cartList: {
-    // gap: 2,
+    paddingTop: 10,
   },
   emptyCartText: {
     textAlign: "center",

@@ -40,6 +40,9 @@ const AppLayout = () => {
 
   const handleFindRecipes = () => {
     const ingredientNames = ingredients.map((i) => i.name).join(",");
+    if (router.canDismiss()) {
+      router.dismiss();
+    }
     router.push(`/(user)/menu?ingredients=${ingredientNames}`);
   };
 

@@ -21,6 +21,12 @@ const _layout = () => {
     >
       <Tabs.Screen
         name="menu"
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate("menu", { screen: "index" });
+          },
+        })}
         options={{
           title: "Menu",
           headerShown: false,
