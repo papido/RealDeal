@@ -1,5 +1,6 @@
 import { colors } from "@/src/constants/theme";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { StackActions } from "@react-navigation/native";
 import { Tabs } from "expo-router";
 import React from "react";
 
@@ -23,8 +24,19 @@ const _layout = () => {
         name="menu"
         listeners={({ navigation }) => ({
           tabPress: (e) => {
-            e.preventDefault();
-            navigation.navigate("menu", { screen: "index" });
+            const state = navigation.getState();
+            const focusedRoute = state.routes[state.index];
+            const menuRoute = state.routes.find(
+              (route) => route.name === "menu"
+            );
+            const menuStackKey = menuRoute?.state?.key;
+
+            if (focusedRoute?.name === "menu" && menuStackKey) {
+              navigation.dispatch({
+                ...StackActions.popToTop(),
+                target: menuStackKey,
+              });
+            }
           },
         })}
         options={{

@@ -1,10 +1,13 @@
+﻿import { auth, firestore } from "@/config/firebase";
 import { parseBMLine } from "@/src/utils/bmParser";
 import { parseENLine } from "@/src/utils/enParser";
 import React, { JSX, useMemo, useState } from "react";
 import {
+  Alert,
   Button,
   FlatList,
   Pressable,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -27,6 +30,7 @@ export default function IngredientParser(): JSX.Element {
     ParsedIngredient[]
   >([]);
   const [parserLang, setParserLang] = useState<"bm" | "en">("bm");
+  const [saving, setSaving] = useState(false);
 
   // inline edit state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -74,104 +78,136 @@ export default function IngredientParser(): JSX.Element {
     setDraftIngredient("");
   };
 
+  const handleSave = async (): Promise<void> => {
+    const cleanIngredients = parsedIngredients
+      .map(({ quantity, unit, ingredient }) => ({
+        quantity: quantity ?? null,
+        unit: unit ?? null,
+        ingredient: ingredient?.trim() || null,
+      }))
+      .filter((item) => item.ingredient);
+
+    if (!cleanIngredients.length || saving) return;
+
+    const uid = auth().currentUser?.uid ?? null;
+    if (!uid) {
+      console.error("Cannot save ingredients without a signed-in user.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const collection = firestore()
+        .collection("users")
+        .doc(uid)
+        .collection("parsedIngredients");
+
+      const docRef = collection.doc();
+      await docRef.set({
+        items: cleanIngredients,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      });
+      Alert.alert("Saved", "Ingredients saved successfully.");
+    } catch (error) {
+      console.error("Error saving parsed ingredients:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <View style={{ padding: 16, flex: 1 }}>
+    <View style={styles.container}>
       <TextInput
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          padding: 12,
-          height: 120,
-          marginBottom: 12,
-          textAlignVertical: "top",
-        }}
+        style={styles.input}
         multiline
-        placeholder="Paste ingredients here…"
+        placeholder="Paste ingredients here"
         value={rawText}
         onChangeText={setRawText}
       />
 
-      <View
-        style={{
-          flexDirection: "row",
-          marginBottom: 12,
-          justifyContent: "space-between",
-        }}
-      >
-        <Button title="Parse" onPress={handleParse} />
-        <View style={{ width: 12 }} />
-        <Button
-          title="Clear"
-          onPress={() => {
-            setRawText("");
-            setParsedIngredients([]);
-            setEditingIndex(null);
-            setDraftIngredient("");
-          }}
-        />
-        <View style={{ flexDirection: "row", marginBottom: 12, gap: 8 }}>
-          <Pressable
-            onPress={() => setParserLang("bm")}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: parserLang === "bm" ? "#111" : "#ccc",
-              backgroundColor: parserLang === "bm" ? "#111" : "transparent",
+      <View style={styles.actionsRow}>
+        <View style={styles.actionsLeft}>
+          <Button title="Parse" onPress={handleParse} />
+          <View style={styles.buttonSpacer} />
+          <Button
+            title="Clear"
+            onPress={() => {
+              setRawText("");
+              setParsedIngredients([]);
+              setEditingIndex(null);
+              setDraftIngredient("");
             }}
-          >
-            <Text style={{ color: parserLang === "bm" ? "#fff" : "#111" }}>
-              BM
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setParserLang("en")}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: parserLang === "en" ? "#111" : "#ccc",
-              backgroundColor: parserLang === "en" ? "#111" : "transparent",
-            }}
-          >
-            <Text style={{ color: parserLang === "en" ? "#fff" : "#111" }}>
-              EN
-            </Text>
-          </Pressable>
+          />
+        </View>
+        <View style={styles.langRow}>
+          <Text style={styles.langLabel}>Parser</Text>
+          <View style={styles.langToggle}>
+            <Pressable
+              onPress={() => setParserLang("bm")}
+              style={[
+                styles.langButton,
+                parserLang === "bm" && styles.langButtonActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.langButtonText,
+                  parserLang === "bm" && styles.langButtonTextActive,
+                ]}
+              >
+                BM
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setParserLang("en")}
+              style={[
+                styles.langButton,
+                parserLang === "en" && styles.langButtonActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.langButtonText,
+                  parserLang === "en" && styles.langButtonTextActive,
+                ]}
+              >
+                EN
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
       <FlatList<ParsedIngredient>
         data={parsedIngredients}
         keyExtractor={(_, i) => i.toString()}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          parsedIngredients.length ? (
+            <View style={styles.listHeader}>
+              <Text style={[styles.headerText, styles.cellSmall]}>Qty</Text>
+              <Text style={[styles.headerText, styles.cellSmall]}>Unit</Text>
+              <Text style={[styles.headerText, styles.cellGrow]}>
+                Ingredient
+              </Text>
+              <Text style={styles.headerText}>Edit</Text>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>Paste and parse to see results.</Text>
+        }
         renderItem={({ item, index }) => {
           const isEditing = editingIndex === index;
 
           return (
-            <View
-              style={{
-                flexDirection: "row",
-                marginBottom: 8,
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-              }}
-            >
-              <Text style={{ width: 60 }}>{item.quantity ?? "?"}</Text>
-              <Text style={{ width: 60 }}>{item.unit ?? "?"}</Text>
+            <View style={styles.listRow}>
+              <Text style={styles.cellSmall}>{item.quantity ?? "?"}</Text>
+              <Text style={styles.cellSmall}>{item.unit ?? "?"}</Text>
 
               {isEditing ? (
                 <TextInput
-                  style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    borderColor: "#ccc",
-                    paddingHorizontal: 8,
-                    paddingVertical: 6,
-                    borderRadius: 6,
-                  }}
+                  style={styles.inlineInput}
                   value={draftIngredient}
                   onChangeText={setDraftIngredient}
                   placeholder="Ingredient"
@@ -180,16 +216,16 @@ export default function IngredientParser(): JSX.Element {
                   returnKeyType="done"
                 />
               ) : (
-                <Text style={{ flex: 1 }}>{item.ingredient ?? "?"}</Text>
+                <Text style={styles.cellGrow}>{item.ingredient ?? "?"}</Text>
               )}
 
               {isEditing ? (
-                <Pressable onPress={doneEdit}>
-                  <Text style={{ color: "blue" }}>Done</Text>
+                <Pressable onPress={doneEdit} style={styles.linkButton}>
+                  <Text style={styles.linkButtonText}>Done</Text>
                 </Pressable>
               ) : (
                 <Pressable onPress={() => startEdit(index)}>
-                  <Text style={{ color: "blue" }}>✏️</Text>
+                  <Text style={styles.linkButtonText}>Edit</Text>
                 </Pressable>
               )}
             </View>
@@ -198,18 +234,123 @@ export default function IngredientParser(): JSX.Element {
       />
 
       <Button
-        title="Save"
-        onPress={() => {
-          const cleanIngredients = parsedIngredients.map(
-            ({ quantity, unit, ingredient }) => ({
-              quantity,
-              unit,
-              ingredient,
-            })
-          );
-          console.log("Saved parsed ingredients", cleanIngredients);
-        }}
+        title={saving ? "Saving..." : "Save"}
+        onPress={handleSave}
+        disabled={saving || parsedIngredients.length === 0}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 12,
+    height: 120,
+    marginBottom: 12,
+    borderRadius: 10,
+    textAlignVertical: "top",
+    backgroundColor: "#fafafa",
+  },
+  actionsRow: {
+    marginBottom: 12,
+  },
+  actionsLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  buttonSpacer: {
+    width: 10,
+  },
+  langRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  langLabel: {
+    fontSize: 12,
+    color: "#555",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  langToggle: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  langButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  langButtonActive: {
+    backgroundColor: "#111",
+  },
+  langButtonText: {
+    color: "#111",
+    fontWeight: "600",
+  },
+  langButtonTextActive: {
+    color: "#fff",
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
+  listHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    marginBottom: 4,
+  },
+  headerText: {
+    fontSize: 12,
+    color: "#666",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  listRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "center",
+  },
+  cellSmall: {
+    width: 70,
+  },
+  cellGrow: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  inlineInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#fff",
+  },
+  linkButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  linkButtonText: {
+    color: "#1a73e8",
+    fontWeight: "600",
+  },
+  emptyText: {
+    color: "#666",
+    fontStyle: "italic",
+    paddingVertical: 16,
+  },
+});
