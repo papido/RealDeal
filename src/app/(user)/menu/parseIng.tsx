@@ -1,4 +1,5 @@
 ﻿import { auth, firestore } from "@/config/firebase";
+import { ParsedIngredient } from "@/src/constants/types";
 import { parseBMLine } from "@/src/utils/bmParser";
 import { parseENLine } from "@/src/utils/enParser";
 import React, { JSX, useMemo, useState } from "react";
@@ -12,12 +13,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-
-type ParsedIngredient = {
-  quantity?: string | null;
-  unit?: string | null;
-  ingredient?: string | null;
-};
 
 type EditableField = keyof Pick<
   ParsedIngredient,

@@ -1,8 +1,13 @@
 ﻿import { auth, firestore } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
+import { ParsedIngredient } from "@/src/constants/types";
+import { useCart } from "@/src/contexts/CartProvider";
+import { useIngredients } from "@/src/contexts/IngredientsProvider";
+import { findCartMatches } from "@/src/utils/ingredientMatching";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -30,10 +35,13 @@ const MenuScreen = () => {
   const [uid, setUid] = useState<string | null>(
     auth().currentUser?.uid ?? null
   );
+  const { cartItems } = useCart();
+  const { ingredients } = useIngredients();
   const [savedTiles, setSavedTiles] = useState<SavedTile[]>([]);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [focusTick, setFocusTick] = useState(0);
   const cleanupOnceRef = useRef(false);
 
   useEffect(() => {
@@ -128,6 +136,30 @@ const MenuScreen = () => {
     [filteredTiles, selectedTileId]
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedTileId && filteredTiles.length > 0) {
+        setSelectedTileId(filteredTiles[0].id);
+      }
+      setFocusTick((prev) => prev + 1);
+      setDropdownOpen(false);
+    }, [filteredTiles, selectedTileId])
+  );
+
+  const matchedIngredientSet = useMemo(() => {
+    if (!selectedTile) return new Set<string>();
+    const matches = findCartMatches(
+      selectedTile.items as ParsedIngredient[],
+      cartItems,
+      ingredients.map((item) => item.name)
+    );
+    return new Set(
+      matches
+        .map((item) => (item.ingredient ?? "").toLowerCase().trim())
+        .filter(Boolean)
+    );
+  }, [selectedTile, cartItems, ingredients, focusTick]);
+
   return (
     <View style={styles.container}>
       {ingredientsFromCart && (
@@ -190,11 +222,25 @@ const MenuScreen = () => {
               <Text style={styles.tileTitle}>
                 Selected Ingredients ({selectedTile.items.length})
               </Text>
+              <Text style={styles.legendText}>Green = in cart</Text>
               <View style={styles.tileList}>
                 {selectedTile.items.map((entry, entryIndex) => (
                   <Text
                     key={`${selectedTile.id}-${entryIndex}`}
-                    style={styles.tileItem}
+                    style={[
+                      styles.tileItem,
+                      !(
+                        entry.ingredient &&
+                        matchedIngredientSet.has(
+                          entry.ingredient.toLowerCase().trim()
+                        )
+                      ) && styles.tileItemDim,
+                      entry.ingredient &&
+                        matchedIngredientSet.has(
+                          entry.ingredient.toLowerCase().trim()
+                        ) &&
+                        styles.tileItemMatch,
+                    ]}
                   >
                     {"- "}
                     {entry.ingredient || "Unnamed"} ({entry.quantity ?? "?"}{" "}
@@ -305,11 +351,23 @@ const styles = StyleSheet.create({
     color: colors.black,
     marginBottom: 10,
   },
+  legendText: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginBottom: 8,
+  },
   tileList: {
     gap: 6,
   },
   tileItem: {
     fontSize: 14,
     color: colors.textLight,
+  },
+  tileItemDim: {
+    color: "#6b7280",
+  },
+  tileItemMatch: {
+    color: "#0b7a2a",
+    fontWeight: "700",
   },
 });

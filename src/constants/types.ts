@@ -149,7 +149,7 @@ export type IngredientsType = {
 };
 
 export type ParsedIngredient = {
-  quantity: number | string | null;
-  unit: string | null;
-  ingredient: string;
+  quantity?: number | string | null;
+  unit?: string | null;
+  ingredient?: string | null;
 };

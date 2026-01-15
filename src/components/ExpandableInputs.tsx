@@ -14,28 +14,6 @@ import {
 import { IngredientsType } from "../constants/types";
 import Button from "./Button";
 
-const translateToEnglish = async (text: string) => {
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(
-    text
-  )}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return text;
-
-    const data = await response.json();
-    const translatedText =
-      Array.isArray(data?.[0]) && data[0].length > 0
-        ? data[0].map((item: any[]) => item?.[0]).join("")
-        : "";
-
-    return translatedText || text;
-  } catch (error) {
-    console.error("Translation failed", error);
-    return text;
-  }
-};
-
 const ExpandableInputs = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState("");
@@ -126,7 +104,7 @@ const ExpandableInputs = () => {
 
     setLoading(true);
 
-    const translatedName = await translateToEnglish(ingredients.name.trim());
+    const originalName = ingredients.name.trim();
     const quantity = Number(ingredients.quantity);
     const weight = Number(ingredients.weight);
 
@@ -136,7 +114,7 @@ const ExpandableInputs = () => {
     );
 
     const res = await createIngredients({
-      name: translatedName,
+      name: originalName,
       price: Number(ingredients.price),
       quantity: quantity,
       weight: convertedWeight,
