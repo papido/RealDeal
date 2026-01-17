@@ -80,7 +80,7 @@ const ExpandableInputs = () => {
             unit: selectedUnit,
             quantity:
               selectedUnit === "each"
-                ? "1"
+                ? ""
                 : prev.unit === "each"
                   ? ""
                   : prev.quantity,
@@ -190,8 +190,13 @@ const ExpandableInputs = () => {
               }
               placeholderTextColor="#999"
               multiline={true}
-              style={[styles.input, styles.weightInput]}
+              style={[
+                styles.input,
+                styles.weightInput,
+                ingredients.unit === "each" && styles.inputDisabled,
+              ]}
               keyboardType="numeric"
+              editable={ingredients.unit !== "each"}
               value={ingredients.weight}
               onChangeText={(text) =>
                 setIngredients({ ...ingredients, weight: text })
@@ -206,18 +211,16 @@ const ExpandableInputs = () => {
               style={styles.unitPrice}
             >{`$${unitPrice} / ${ingredients.unit}`}</Text>
           )}
-          {ingredients.unit !== "each" && (
-            <TextInput
-              placeholder="Quantity"
-              placeholderTextColor="#999"
-              style={styles.input}
-              keyboardType="numeric"
-              value={ingredients.quantity}
-              onChangeText={(text) =>
-                setIngredients({ ...ingredients, quantity: text })
-              }
-            />
-          )}
+          <TextInput
+            placeholder="Quantity"
+            placeholderTextColor="#999"
+            style={styles.input}
+            keyboardType="numeric"
+            value={ingredients.quantity}
+            onChangeText={(text) =>
+              setIngredients({ ...ingredients, quantity: text })
+            }
+          />
 
           {!!errors && <Text style={styles.errorText}>{errors}</Text>}
 
@@ -267,6 +270,10 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     borderRadius: 8,
     width: "100%",
+  },
+  inputDisabled: {
+    backgroundColor: "#f0f0f0",
+    color: "#888",
   },
   weightContainer: {
     flexDirection: "row",

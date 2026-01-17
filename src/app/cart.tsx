@@ -6,15 +6,10 @@ import SwipeToDelete from "../components/SwipeToDelete";
 import { useIngredients } from "../contexts/IngredientsProvider";
 const CartScreen = () => {
   const { ingredients, removeIngredient } = useIngredients();
-
-  // The `selectedDateTime` state and `handleDateTimeChange` function are not currently used.
-  // I've removed them for now, but we can add them back when you implement the DeliveryScheduler.
-  // const [selectedDateTime, setSelectedDateTime] = useState(() => {
-  //   const tomorrow = new Date();
-  //   tomorrow.setDate(tomorrow.getDate() + 2);
-  //   tomorrow.setHours(9, 0, 0, 0); // Default to 9:00 AM
-  //   return tomorrow;
-  // });
+  const totalPrice = ingredients.reduce(
+    (sum, item) => sum + Number(item.price || 0),
+    0
+  );
 
   return (
     <BottomSheetModalProvider>
@@ -45,7 +40,12 @@ const CartScreen = () => {
 
                 {/* Delivery Pricing and Checkout */}
                 <View style={styles.totalSection}>
-                  {/* <DeliveryPricing /> */}
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Total</Text>
+                    <Text style={styles.totalValue}>
+                      RM{totalPrice.toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </>
@@ -92,6 +92,23 @@ const styles = StyleSheet.create({
   },
   totalSection: {
     marginTop: 5,
+  },
+  totalRow: {
+    marginTop: 12,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111",
   },
   checkoutButton: {
     backgroundColor: "#007bff",

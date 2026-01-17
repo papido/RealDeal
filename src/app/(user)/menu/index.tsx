@@ -7,9 +7,16 @@ import { findCartMatches } from "@/src/utils/ingredientMatching";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -65,52 +72,50 @@ const MenuScreen = () => {
       .doc(uid)
       .collection("parsedIngredients");
 
-    const unsubscribe = collectionRef
-      .orderBy("createdAt", "desc")
-      .onSnapshot(
-        async (snapshot) => {
-          const legacyDocs = snapshot.docs.filter((doc) => {
-            const data = doc.data() as { items?: SavedIngredient[] };
-            return !Array.isArray(data.items);
-          });
+    const unsubscribe = collectionRef.orderBy("createdAt", "desc").onSnapshot(
+      async (snapshot) => {
+        const legacyDocs = snapshot.docs.filter((doc) => {
+          const data = doc.data() as { items?: SavedIngredient[] };
+          return !Array.isArray(data.items);
+        });
 
-          if (legacyDocs.length > 0 && !cleanupOnceRef.current) {
-            cleanupOnceRef.current = true;
-            try {
-              const batch = firestore().batch();
-              legacyDocs.forEach((doc) => batch.delete(doc.ref));
-              await batch.commit();
-            } catch (error) {
-              console.error("Error cleaning legacy ingredients:", error);
-            }
+        if (legacyDocs.length > 0 && !cleanupOnceRef.current) {
+          cleanupOnceRef.current = true;
+          try {
+            const batch = firestore().batch();
+            legacyDocs.forEach((doc) => batch.delete(doc.ref));
+            await batch.commit();
+          } catch (error) {
+            console.error("Error cleaning legacy ingredients:", error);
           }
-
-          const tiles = snapshot.docs
-            .map((doc) => {
-              const data = doc.data() as {
-                items?: SavedIngredient[];
-                createdAt?: any;
-              };
-
-              if (!Array.isArray(data.items)) return null;
-
-              return {
-                id: doc.id,
-                items: data.items,
-                createdAt: data.createdAt,
-              };
-            })
-            .filter(Boolean) as SavedTile[];
-
-          setSavedTiles(tiles);
-          setLoading(false);
-        },
-        (error) => {
-          console.error("Error loading parsed ingredients:", error);
-          setSavedTiles([]);
-          setLoading(false);
         }
-      );
+
+        const tiles = snapshot.docs
+          .map((doc) => {
+            const data = doc.data() as {
+              items?: SavedIngredient[];
+              createdAt?: any;
+            };
+
+            if (!Array.isArray(data.items)) return null;
+
+            return {
+              id: doc.id,
+              items: data.items,
+              createdAt: data.createdAt,
+            };
+          })
+          .filter(Boolean) as SavedTile[];
+
+        setSavedTiles(tiles);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error loading parsed ingredients:", error);
+        setSavedTiles([]);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [uid]);
@@ -162,11 +167,6 @@ const MenuScreen = () => {
 
   return (
     <View style={styles.container}>
-      {ingredientsFromCart && (
-        <Text style={styles.infoText}>
-          Showing ingredients for: {ingredientsFromCart.replace(/,/g, ", ")}
-        </Text>
-      )}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -182,75 +182,83 @@ const MenuScreen = () => {
       ) : filteredTiles.length === 0 ? (
         <Text style={styles.emptyText}>No matching ingredients.</Text>
       ) : (
-        <View style={styles.selectionSection}>
-          <TouchableOpacity
-            onPress={() => setDropdownOpen((prev) => !prev)}
-            style={styles.dropdownButton}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.dropdownButtonText}>
-              {selectedTile
-                ? `Saved Ingredients (${selectedTile.items.length})`
-                : "Select saved ingredients"}
-            </Text>
-            <Ionicons
-              name={dropdownOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.textLight}
-            />
-          </TouchableOpacity>
-          {dropdownOpen && (
-            <View style={styles.dropdownList}>
-              {filteredTiles.map((tile, index) => (
-                <TouchableOpacity
-                  key={tile.id}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedTileId(tile.id);
-                    setDropdownOpen(false);
-                  }}
-                >
-                  <Text style={styles.dropdownItemText}>
-                    Saved Ingredients #{index + 1} ({tile.items.length})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          {selectedTile && (
-            <View style={styles.selectedTile}>
-              <Text style={styles.tileTitle}>
-                Selected Ingredients ({selectedTile.items.length})
+        <>
+          <View style={styles.dropdownSection}>
+            <TouchableOpacity
+              onPress={() => setDropdownOpen((prev) => !prev)}
+              style={styles.dropdownButton}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.dropdownButtonText}>
+                {selectedTile
+                  ? `Saved Ingredients (${selectedTile.items.length})`
+                  : "Select saved ingredients"}
               </Text>
-              <Text style={styles.legendText}>Green = in cart</Text>
-              <View style={styles.tileList}>
-                {selectedTile.items.map((entry, entryIndex) => (
-                  <Text
-                    key={`${selectedTile.id}-${entryIndex}`}
-                    style={[
-                      styles.tileItem,
-                      !(
-                        entry.ingredient &&
-                        matchedIngredientSet.has(
-                          entry.ingredient.toLowerCase().trim()
-                        )
-                      ) && styles.tileItemDim,
-                      entry.ingredient &&
-                        matchedIngredientSet.has(
-                          entry.ingredient.toLowerCase().trim()
-                        ) &&
-                        styles.tileItemMatch,
-                    ]}
-                  >
-                    {"- "}
-                    {entry.ingredient || "Unnamed"} ({entry.quantity ?? "?"}{" "}
-                    {entry.unit ?? ""})
-                  </Text>
-                ))}
+              <Ionicons
+                name={dropdownOpen ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={colors.textLight}
+              />
+            </TouchableOpacity>
+            {dropdownOpen && (
+              <View style={styles.dropdownOverlay}>
+                <View style={styles.dropdownList}>
+                  {filteredTiles.map((tile, index) => (
+                    <TouchableOpacity
+                      key={tile.id}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setSelectedTileId(tile.id);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>
+                        Saved Ingredients #{index + 1} ({tile.items.length})
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
+            )}
+          </View>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View style={styles.selectionSection}>
+              {selectedTile && (
+                <View style={styles.selectedTile}>
+                  <Text style={styles.tileTitle}>
+                    Selected Ingredients ({selectedTile.items.length})
+                  </Text>
+                  <Text style={styles.legendText}>Green = in cart</Text>
+                  <View style={styles.tileList}>
+                    {selectedTile.items.map((entry, entryIndex) => (
+                      <Text
+                        key={`${selectedTile.id}-${entryIndex}`}
+                        style={[
+                          styles.tileItem,
+                          !(
+                            entry.ingredient &&
+                            matchedIngredientSet.has(
+                              entry.ingredient.toLowerCase().trim()
+                            )
+                          ) && styles.tileItemDim,
+                          entry.ingredient &&
+                            matchedIngredientSet.has(
+                              entry.ingredient.toLowerCase().trim()
+                            ) &&
+                            styles.tileItemMatch,
+                        ]}
+                      >
+                        {"- "}
+                        {entry.ingredient || "Unnamed"} ({entry.quantity ?? "?"}{" "}
+                        {entry.unit ?? ""})
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
-          )}
-        </View>
+          </ScrollView>
+        </>
       )}
     </View>
   );
@@ -262,6 +270,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  scrollContent: {
+    paddingBottom: 16,
   },
   infoText: {
     paddingHorizontal: 16,
@@ -277,7 +288,19 @@ const styles = StyleSheet.create({
   },
   selectionSection: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+  },
+  dropdownSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    zIndex: 2,
+  },
+  dropdownOverlay: {
+    position: "absolute",
+    top: 52,
+    left: 0,
+    right: 0,
+    zIndex: 3,
+    paddingHorizontal: 14,
   },
   dropdownButton: {
     flexDirection: "row",

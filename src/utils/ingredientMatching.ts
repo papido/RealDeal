@@ -14,6 +14,8 @@ const tokenize = (str: string): string[] =>
     .map((token) => token.trim())
     .filter(Boolean);
 
+const compact = (str: string): string => normalize(str).replace(/\s+/g, "");
+
 /**
  * Extracts a set of normalized ingredient names present in the cart.
  * Checks both product names and the 'ingredients' field of products.
@@ -47,7 +49,7 @@ export const getCartIngredientSet = (cartItems: CartItem[]): Set<string> => {
 
 /**
  * Checks if a specific ingredient is in the cart.
- * Performs exact and partial matching.
+ * Performs fuzzy matching with tighter precision.
  */
 export const isIngredientInCart = (
   ingredientName: string,
@@ -56,27 +58,28 @@ export const isIngredientInCart = (
   const target = normalize(ingredientName);
   if (!target) return false;
 
-  // 1. Direct match
   if (cartIngredientSet.has(target)) return true;
 
-  // 2. Partial match (fuzzy)
-  // Check if the target ingredient is contained in any cart item string or vice versa
-  // e.g. target="onion" matches cart="red onion"
+  const targetCompact = compact(target);
+  const targetTokens = new Set(tokenize(target));
+
   for (const cartIng of cartIngredientSet) {
-    if (cartIng.includes(target) || target.includes(cartIng)) {
+    if (compact(cartIng) === targetCompact) {
       return true;
     }
 
-    // 3. Word overlap (handles re-ordered or punctuated strings)
-    const cartTokens = tokenize(cartIng);
-    const targetTokens = tokenize(target);
-    if (
-      cartTokens.some(
-        (token) => token.length > 2 && targetTokens.includes(token)
-      )
-    ) {
-      return true;
+    const cartTokens = new Set(tokenize(cartIng));
+    const commonTokens = [...targetTokens].filter((t) => cartTokens.has(t));
+    const commonCount = commonTokens.length;
+    const maxSize = Math.max(targetTokens.size, cartTokens.size);
+
+    if (targetTokens.size <= 2) {
+      if (commonCount === targetTokens.size) return true;
+      continue;
     }
+
+    const overlapRatio = commonCount / maxSize;
+    if (commonCount >= 2 && overlapRatio >= 0.6) return true;
   }
 
   return false;

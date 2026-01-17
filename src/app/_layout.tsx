@@ -5,19 +5,12 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import "config/firebase.ts";
 import * as Font from "expo-font";
 import * as Notifications from "expo-notifications";
-import { router, SplashScreen, Stack } from "expo-router";
+import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { StyleSheet, Text } from "react-native";
-import {
-  GestureHandlerRootView,
-  Pressable,
-} from "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
-import {
-  IngredientsProvider,
-  useIngredients,
-} from "../contexts/IngredientsProvider";
+import { IngredientsProvider } from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
 
 Notifications.setNotificationHandler({
@@ -36,16 +29,6 @@ SplashScreen.preventAutoHideAsync();
 const AppLayout = () => {
   const { user } = useAuth(); // Now this is within AuthProvider
   const isLoggedIn = !!user;
-  const { ingredients, removeIngredient } = useIngredients();
-
-  const handleFindRecipes = () => {
-    const ingredientNames = ingredients.map((i) => i.name).join(",");
-    if (router.canDismiss()) {
-      router.dismiss();
-    }
-    router.push(`/(user)/menu?ingredients=${ingredientNames}`);
-  };
-
   return (
     <>
       <StatusBar style="dark" />
@@ -62,16 +45,6 @@ const AppLayout = () => {
           options={{
             title: "Cart",
             presentation: "modal",
-            headerRight: () => (
-              <Pressable
-                onPress={handleFindRecipes}
-                style={styles.findRecipesButton}
-              >
-                <Text style={styles.findRecipesButtonText}>
-                  Find Recipes With These Ingredients
-                </Text>
-              </Pressable>
-            ),
           }}
         />
       </Stack>
@@ -126,17 +99,3 @@ const RootLayout = () => {
 
 export default RootLayout;
 
-const styles = StyleSheet.create({
-  findRecipesButton: {
-    marginVertical: 10,
-    backgroundColor: "#28a745",
-    padding: 5,
-    borderRadius: 8,
-  },
-  findRecipesButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-});
