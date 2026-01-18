@@ -12,11 +12,13 @@ export const parseENLine = (line: string): ParsedIngredient => {
   const parsed = results[0];
 
   let unit = (parsed as any)?.unitOfMeasure ?? (parsed as any)?.unit;
+  const hasToTaste = /\bto taste\b/i.test(line);
 
   if (!unit) {
     if (/\bpinch\b/i.test(line)) unit = "pinch";
     else if (/\bslices?\b/i.test(line)) unit = "slice";
-    else unit = "to taste";
+    else if (hasToTaste) unit = "to taste";
+    else unit = "piece";
   }
 
   let ingredient =
@@ -25,10 +27,15 @@ export const parseENLine = (line: string): ParsedIngredient => {
     (parsed as any)?.name ??
     null;
 
+  if (hasToTaste && unit && !/\bto taste\b/i.test(unit)) {
+    unit = `${unit} to taste`;
+  }
+
   if (ingredient) {
     ingredient = ingredient
       .replace(/\bslices?\b/gi, "")
       .replace(/\bpinch\b/gi, "")
+      .replace(/\bto taste\b/gi, "")
       .replace(/^\s*of\s+/i, "")
       .trim();
   }

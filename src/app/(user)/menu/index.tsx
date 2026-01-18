@@ -16,6 +16,7 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -165,6 +166,35 @@ const MenuScreen = () => {
     );
   }, [selectedTile, cartItems, ingredients, focusTick]);
 
+  const handleDeleteSelected = useCallback(() => {
+    if (!uid || !selectedTileId) return;
+
+    Alert.alert(
+      "Delete saved ingredients",
+      "This will remove the selected ingredients list.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await firestore()
+                .collection("users")
+                .doc(uid)
+                .collection("parsedIngredients")
+                .doc(selectedTileId)
+                .delete();
+              setSelectedTileId(null);
+            } catch (error) {
+              console.error("Error deleting saved ingredients:", error);
+            }
+          },
+        },
+      ]
+    );
+  }, [uid, selectedTileId]);
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -225,9 +255,19 @@ const MenuScreen = () => {
             <View style={styles.selectionSection}>
               {selectedTile && (
                 <View style={styles.selectedTile}>
-                  <Text style={styles.tileTitle}>
-                    Selected Ingredients ({selectedTile.items.length})
-                  </Text>
+                  <View style={styles.tileHeader}>
+                    <Text style={styles.tileTitle}>
+                      Selected Ingredients ({selectedTile.items.length})
+                    </Text>
+                    <TouchableOpacity
+                      onPress={handleDeleteSelected}
+                      style={styles.deleteButton}
+                      accessibilityLabel="Delete saved ingredients"
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#b91c1c" />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.legendText}>Green = in cart</Text>
                   <View style={styles.tileList}>
                     {selectedTile.items.map((entry, entryIndex) => (
@@ -249,8 +289,8 @@ const MenuScreen = () => {
                         ]}
                       >
                         {"- "}
-                        {entry.ingredient || "Unnamed"} ({entry.quantity ?? "?"}{" "}
-                        {entry.unit ?? ""})
+                        {(entry.quantity ?? "?").toString()}{" "}
+                        {entry.unit ?? ""} {entry.ingredient || "Unnamed"}
                       </Text>
                     ))}
                   </View>
@@ -372,7 +412,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.black,
+  },
+  tileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
+  },
+  deleteButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   legendText: {
     fontSize: 12,
