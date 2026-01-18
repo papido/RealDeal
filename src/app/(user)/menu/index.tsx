@@ -275,7 +275,11 @@ const MenuScreen = () => {
     if (!selectedTile) return;
     router.push({
       pathname: "/(user)/menu/parseIng",
-      params: { items: JSON.stringify(selectedTile.items), editAll: "1" },
+      params: {
+        items: JSON.stringify(selectedTile.items),
+        editAll: "1",
+        tileId: selectedTile.id,
+      },
     });
   }, [router, selectedTile]);
 
@@ -370,7 +374,9 @@ const MenuScreen = () => {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <Text style={styles.legendText}>Green = in cart</Text>
+                  <Text style={styles.legendText}>
+                    Green = in cart • Yellow = unit mismatch
+                  </Text>
                   <View style={styles.tileList}>
                     {selectedTile.items.map((entry, entryIndex) => (
                       <View
@@ -383,6 +389,10 @@ const MenuScreen = () => {
                             normalizeIngredient(ingredientName);
                           const isMatch = isMatchedIngredient(normalizedName);
                           const meta = findIngredientMeta(normalizedName);
+                          const entryUnit = entry.unit?.toLowerCase().trim() ?? "";
+                          const metaUnit = meta?.unit?.toLowerCase().trim() ?? "";
+                          const unitMismatch =
+                            !!entryUnit && !!metaUnit && entryUnit !== metaUnit;
                           const unitPriceRaw = meta?.unitPrice?.toString() ?? "";
                           const unitPriceDisplay = unitPriceRaw
                             .replace(/rm\s*/i, "")
@@ -400,12 +410,13 @@ const MenuScreen = () => {
                             !Number.isNaN(quantityValue)
                               ? unitPriceValue * quantityValue
                               : NaN;
-                          const unitPriceLabel = meta
+                          const unitPriceLabel = !unitMismatch && meta
                             ? [unitPriceDisplay, meta.unit]
                                 .filter(Boolean)
                                 .join(" / ")
                             : "";
-                          const totalLabel = !Number.isNaN(totalPrice)
+                          const totalLabel =
+                            !unitMismatch && !Number.isNaN(totalPrice)
                             ? `RM ${totalPrice.toFixed(2)}`
                             : "";
                           const metaText = [unitPriceLabel, totalLabel]
@@ -420,6 +431,7 @@ const MenuScreen = () => {
                                   styles.tileItemLabel,
                                   !isMatch && styles.tileItemDim,
                                   isMatch && styles.tileItemMatch,
+                                  isMatch && unitMismatch && styles.tileItemWarn,
                                 ]}
                               >
                                 {"- "}
@@ -433,6 +445,7 @@ const MenuScreen = () => {
                                     styles.tileItemMeta,
                                     !isMatch && styles.tileItemDim,
                                     isMatch && styles.tileItemMatch,
+                                    isMatch && unitMismatch && styles.tileItemWarn,
                                   ]}
                                 >
                                   {metaText}
@@ -614,5 +627,8 @@ const styles = StyleSheet.create({
   tileItemMatch: {
     color: "#0b7a2a",
     fontWeight: "700",
+  },
+  tileItemWarn: {
+    color: "#ca8a04",
   },
 });

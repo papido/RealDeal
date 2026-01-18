@@ -21,9 +21,10 @@ type EditableField = keyof Pick<
 >;
 
 export default function IngredientParser(): JSX.Element {
-  const { items, editAll } = useLocalSearchParams<{
+  const { items, editAll, tileId } = useLocalSearchParams<{
     items?: string;
     editAll?: string;
+    tileId?: string;
   }>();
   const [rawText, setRawText] = useState<string>("");
   const [parsedIngredients, setParsedIngredients] = useState<
@@ -115,11 +116,16 @@ export default function IngredientParser(): JSX.Element {
         .doc(uid)
         .collection("parsedIngredients");
 
-      const docRef = collection.doc();
-      await docRef.set({
-        items: cleanIngredients,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-      });
+      const docRef = tileId ? collection.doc(tileId) : collection.doc();
+      await docRef.set(
+        {
+          items: cleanIngredients,
+          ...(tileId
+            ? { updatedAt: firestore.FieldValue.serverTimestamp() }
+            : { createdAt: firestore.FieldValue.serverTimestamp() }),
+        },
+        { merge: true }
+      );
       Alert.alert("Saved", "Ingredients saved successfully.");
     } catch (error) {
       console.error("Error saving parsed ingredients:", error);
