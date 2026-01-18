@@ -13,6 +13,7 @@ export const parseENLine = (line: string): ParsedIngredient => {
 
   let unit = (parsed as any)?.unitOfMeasure ?? (parsed as any)?.unit;
   const hasToTaste = /\bto taste\b/i.test(line);
+  const gramMatch = line.match(/(\d+(?:\.\d+)?)\s*(g|grams?|gram)\b/i);
 
   if (!unit) {
     if (/\bpinch\b/i.test(line)) unit = "pinch";
@@ -36,13 +37,14 @@ export const parseENLine = (line: string): ParsedIngredient => {
       .replace(/\bslices?\b/gi, "")
       .replace(/\bpinch\b/gi, "")
       .replace(/\bto taste\b/gi, "")
+      .replace(/\b\d+(?:\.\d+)?\s*(g|grams?|gram)\b/gi, "")
       .replace(/^\s*of\s+/i, "")
       .trim();
   }
 
   return {
-    quantity: parsed?.quantity?.toString() ?? "1",
-    unit,
+    quantity: gramMatch?.[1] ?? parsed?.quantity?.toString() ?? "1",
+    unit: gramMatch ? "g" : unit,
     ingredient,
   };
 };

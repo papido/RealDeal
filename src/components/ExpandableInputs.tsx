@@ -33,21 +33,24 @@ const ExpandableInputs = () => {
   const calculateUnitPrice = (
     price: string | number,
     weight: string | number,
-    quantity: string | number
+    quantity: string | number,
+    unit: string
   ) => {
     const p = Number(price);
     const w = Number(weight);
-    const q = Number(quantity);
+    const q = unit === "piece" ? 1 : Number(quantity);
 
     if (p > 0 && w > 0 && q > 0) {
-      return (p / (w * q)).toFixed(2);
+      const divisor = unit === "piece" ? w : w * q;
+      return (p / divisor).toFixed(2);
     }
   };
 
   const unitPrice = calculateUnitPrice(
     ingredients.price,
     ingredients.weight,
-    ingredients.quantity
+    ingredients.quantity,
+    ingredients.unit
   );
 
   const onSelectUnit = () => {
@@ -62,7 +65,7 @@ const ExpandableInputs = () => {
       "qt",
       "pt",
       "gal",
-      "each",
+      "piece",
       "Cancel",
     ];
     const cancelButtonIndex = options.length - 1;
@@ -79,9 +82,9 @@ const ExpandableInputs = () => {
             ...prev,
             unit: selectedUnit,
             quantity:
-              selectedUnit === "each"
+              selectedUnit === "piece"
                 ? ""
-                : prev.unit === "each"
+                : prev.unit === "piece"
                   ? ""
                   : prev.quantity,
           }));
@@ -96,7 +99,7 @@ const ExpandableInputs = () => {
     if (
       !ingredients.name.trim() ||
       Number(ingredients.price) <= 0 ||
-      Number(ingredients.quantity) <= 0
+      (ingredients.unit !== "piece" && Number(ingredients.quantity) <= 0)
     ) {
       setErrors("Please fill all the required fields!");
       return;
@@ -186,17 +189,16 @@ const ExpandableInputs = () => {
           <View style={styles.weightContainer}>
             <TextInput
               placeholder={
-                "Total Weight / Total individual count if\nthere's no weight (use each)"
+                "Total Weight / Total individual count if\nthere's no weight (use piece)"
               }
               placeholderTextColor="#999"
               multiline={true}
               style={[
                 styles.input,
                 styles.weightInput,
-                ingredients.unit === "each" && styles.inputDisabled,
               ]}
               keyboardType="numeric"
-              editable={ingredients.unit !== "each"}
+              editable
               value={ingredients.weight}
               onChangeText={(text) =>
                 setIngredients({ ...ingredients, weight: text })
@@ -214,8 +216,12 @@ const ExpandableInputs = () => {
           <TextInput
             placeholder="Quantity"
             placeholderTextColor="#999"
-            style={styles.input}
+            style={[
+              styles.input,
+              ingredients.unit === "piece" && styles.inputDisabled,
+            ]}
             keyboardType="numeric"
+            editable={ingredients.unit !== "piece"}
             value={ingredients.quantity}
             onChangeText={(text) =>
               setIngredients({ ...ingredients, quantity: text })
@@ -278,7 +284,7 @@ const styles = StyleSheet.create({
   weightContainer: {
     flexDirection: "row",
     width: "100%",
-    alignItems: "center",
+    alignItems: "stretch",
     gap: 8,
     marginVertical: 5,
   },
@@ -288,13 +294,15 @@ const styles = StyleSheet.create({
   },
   unitButton: {
     paddingHorizontal: 10,
-    paddingVertical: 16,
+    paddingVertical: 0,
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
-    width: 60,
+    width: 72,
     alignItems: "center",
+    alignSelf: "stretch",
+    justifyContent: "center",
   },
   unitButtonText: {
     fontSize: 16,

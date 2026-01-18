@@ -1,12 +1,23 @@
 import { CartItem, ParsedIngredient } from "@/src/constants/types";
 
 // Helper to normalize strings for comparison
-const normalize = (str: string): string =>
-  str
+const normalize = (str: string): string => {
+  const cleaned = str
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  return cleaned
+    .split(" ")
+    .map((token) => {
+      if (token.length > 3 && token.endsWith("s")) {
+        return token.slice(0, -1);
+      }
+      return token;
+    })
+    .join(" ");
+};
 
 const tokenize = (str: string): string[] =>
   normalize(str)

@@ -6,7 +6,7 @@ import { useIngredients } from "@/src/contexts/IngredientsProvider";
 import { findCartMatches } from "@/src/utils/ingredientMatching";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -45,6 +45,7 @@ const MenuScreen = () => {
   );
   const { cartItems } = useCart();
   const { ingredients } = useIngredients();
+  const router = useRouter();
   const [savedTiles, setSavedTiles] = useState<SavedTile[]>([]);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -123,6 +124,24 @@ const MenuScreen = () => {
 
   const filteredTiles = useMemo(() => savedTiles, [savedTiles]);
 
+  const normalizeIngredient = useCallback((value: string): string => {
+    const cleaned = value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return cleaned
+      .split(" ")
+      .map((token) => {
+        if (token.length > 3 && token.endsWith("s")) {
+          return token.slice(0, -1);
+        }
+        return token;
+      })
+      .join(" ");
+  }, []);
+
   useEffect(() => {
     if (filteredTiles.length === 0) {
       setSelectedTileId(null);
@@ -161,10 +180,67 @@ const MenuScreen = () => {
     );
     return new Set(
       matches
-        .map((item) => (item.ingredient ?? "").toLowerCase().trim())
+        .map((item) => normalizeIngredient(item.ingredient ?? ""))
         .filter(Boolean)
     );
-  }, [selectedTile, cartItems, ingredients, focusTick]);
+  }, [selectedTile, cartItems, ingredients, focusTick, normalizeIngredient]);
+
+  const ingredientMetaMap = useMemo(() => {
+    const map = new Map<string, { unit?: string; unitPrice?: string }>();
+    ingredients.forEach((item) => {
+      const key = normalizeIngredient(item.name);
+      if (key) {
+        map.set(key, { unit: item.unit, unitPrice: item.unitPrice });
+      }
+    });
+    return map;
+  }, [ingredients, normalizeIngredient]);
+
+  const isMatchedIngredient = useCallback(
+    (normalizedName: string) => {
+      if (!normalizedName) return false;
+      if (matchedIngredientSet.has(normalizedName)) return true;
+
+      for (const key of matchedIngredientSet) {
+        if (
+          normalizedName.includes(key) ||
+          key.includes(normalizedName)
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [matchedIngredientSet]
+  );
+
+  const findIngredientMeta = useCallback(
+    (normalizedName: string) => {
+      if (!normalizedName) return null;
+      const direct = ingredientMetaMap.get(normalizedName);
+      if (direct) return direct;
+
+      let bestMatch: { unit?: string; unitPrice?: string } | null = null;
+      let bestLength = 0;
+
+      for (const [key, value] of ingredientMetaMap.entries()) {
+        if (!key) continue;
+        if (
+          normalizedName.includes(key) ||
+          key.includes(normalizedName)
+        ) {
+          if (key.length > bestLength) {
+            bestMatch = value;
+            bestLength = key.length;
+          }
+        }
+      }
+
+      return bestMatch;
+    },
+    [ingredientMetaMap]
+  );
 
   const handleDeleteSelected = useCallback(() => {
     if (!uid || !selectedTileId) return;
@@ -194,6 +270,14 @@ const MenuScreen = () => {
       ]
     );
   }, [uid, selectedTileId]);
+
+  const handleEditSelected = useCallback(() => {
+    if (!selectedTile) return;
+    router.push({
+      pathname: "/(user)/menu/parseIng",
+      params: { items: JSON.stringify(selectedTile.items), editAll: "1" },
+    });
+  }, [router, selectedTile]);
 
   return (
     <View style={styles.container}>
@@ -259,39 +343,105 @@ const MenuScreen = () => {
                     <Text style={styles.tileTitle}>
                       Selected Ingredients ({selectedTile.items.length})
                     </Text>
-                    <TouchableOpacity
-                      onPress={handleDeleteSelected}
-                      style={styles.deleteButton}
-                      accessibilityLabel="Delete saved ingredients"
-                      accessibilityRole="button"
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#b91c1c" />
-                    </TouchableOpacity>
+                    <View style={styles.tileActions}>
+                      <TouchableOpacity
+                        onPress={handleEditSelected}
+                        style={styles.editButton}
+                        accessibilityLabel="Edit saved ingredients"
+                        accessibilityRole="button"
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={18}
+                          color={colors.textLight}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={handleDeleteSelected}
+                        style={styles.deleteButton}
+                        accessibilityLabel="Delete saved ingredients"
+                        accessibilityRole="button"
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color="#b91c1c"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   <Text style={styles.legendText}>Green = in cart</Text>
                   <View style={styles.tileList}>
                     {selectedTile.items.map((entry, entryIndex) => (
-                      <Text
+                      <View
                         key={`${selectedTile.id}-${entryIndex}`}
-                        style={[
-                          styles.tileItem,
-                          !(
-                            entry.ingredient &&
-                            matchedIngredientSet.has(
-                              entry.ingredient.toLowerCase().trim()
-                            )
-                          ) && styles.tileItemDim,
-                          entry.ingredient &&
-                            matchedIngredientSet.has(
-                              entry.ingredient.toLowerCase().trim()
-                            ) &&
-                            styles.tileItemMatch,
-                        ]}
+                        style={styles.tileItemRow}
                       >
-                        {"- "}
-                        {(entry.quantity ?? "?").toString()}{" "}
-                        {entry.unit ?? ""} {entry.ingredient || "Unnamed"}
-                      </Text>
+                        {(() => {
+                          const ingredientName = entry.ingredient ?? "";
+                          const normalizedName =
+                            normalizeIngredient(ingredientName);
+                          const isMatch = isMatchedIngredient(normalizedName);
+                          const meta = findIngredientMeta(normalizedName);
+                          const unitPriceRaw = meta?.unitPrice?.toString() ?? "";
+                          const unitPriceDisplay = unitPriceRaw
+                            .replace(/rm\s*/i, "")
+                            .trim();
+                          const unitPriceValue = unitPriceRaw
+                            ? parseFloat(unitPriceRaw.replace(/[^\d.]/g, ""))
+                            : NaN;
+                          const quantityValue = entry.quantity
+                            ? parseFloat(
+                                entry.quantity.toString().replace(/[^\d.]/g, "")
+                              )
+                            : NaN;
+                          const totalPrice =
+                            !Number.isNaN(unitPriceValue) &&
+                            !Number.isNaN(quantityValue)
+                              ? unitPriceValue * quantityValue
+                              : NaN;
+                          const unitPriceLabel = meta
+                            ? [unitPriceDisplay, meta.unit]
+                                .filter(Boolean)
+                                .join(" / ")
+                            : "";
+                          const totalLabel = !Number.isNaN(totalPrice)
+                            ? `RM ${totalPrice.toFixed(2)}`
+                            : "";
+                          const metaText = [unitPriceLabel, totalLabel]
+                            .filter(Boolean)
+                            .join(" • ");
+
+                          return (
+                            <>
+                              <Text
+                                style={[
+                                  styles.tileItem,
+                                  styles.tileItemLabel,
+                                  !isMatch && styles.tileItemDim,
+                                  isMatch && styles.tileItemMatch,
+                                ]}
+                              >
+                                {"- "}
+                                {(entry.quantity ?? "?").toString()}{" "}
+                                {entry.unit ? `${entry.unit} ` : ""}
+                                {ingredientName || "Unnamed"}
+                              </Text>
+                              {metaText ? (
+                                <Text
+                                  style={[
+                                    styles.tileItemMeta,
+                                    !isMatch && styles.tileItemDim,
+                                    isMatch && styles.tileItemMatch,
+                                  ]}
+                                >
+                                  {metaText}
+                                </Text>
+                              ) : null}
+                            </>
+                          );
+                        })()}
+                      </View>
                     ))}
                   </View>
                 </View>
@@ -419,6 +569,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
   },
+  tileActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
   deleteButton: {
     paddingHorizontal: 6,
     paddingVertical: 4,
@@ -431,9 +589,24 @@ const styles = StyleSheet.create({
   tileList: {
     gap: 6,
   },
+  tileItemRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   tileItem: {
     fontSize: 14,
     color: colors.textLight,
+  },
+  tileItemLabel: {
+    flex: 1,
+    paddingRight: 6,
+  },
+  tileItemMeta: {
+    fontSize: 12,
+    color: colors.textLight,
+    textAlign: "right",
   },
   tileItemDim: {
     color: "#6b7280",
