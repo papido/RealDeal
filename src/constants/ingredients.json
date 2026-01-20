@@ -1,0 +1,122 @@
+{
+  "liquids": {
+    "water": { "density": 1.0, "state": "liquid", "label": "Water" },
+    "soy_sauce": { "density": 1.15, "state": "liquid", "label": "Soy Sauce" },
+    "fish_sauce": { "density": 1.22, "state": "liquid", "label": "Fish Sauce" },
+    "olive_oil": { "density": 0.91, "state": "liquid", "label": "Olive Oil" },
+    "vegetable_oil": {
+      "density": 0.92,
+      "state": "liquid",
+      "label": "Vegetable Oil"
+    },
+    "sesame_oil": { "density": 0.92, "state": "liquid", "label": "Sesame Oil" },
+    "vinegar_balsamic": {
+      "density": 1.05,
+      "state": "liquid",
+      "label": "Balsamic Vinegar"
+    },
+    "vinegar_rice": {
+      "density": 1.01,
+      "state": "liquid",
+      "label": "Rice Vinegar"
+    },
+    "vinegar_apple_cider": {
+      "density": 1.01,
+      "state": "liquid",
+      "label": "Apple Cider Vinegar"
+    },
+    "lemon_juice": {
+      "density": 1.03,
+      "state": "liquid",
+      "label": "Lemon Juice"
+    },
+    "mirin": { "density": 1.18, "state": "liquid", "label": "Mirin" },
+    "chicken_broth": {
+      "density": 1.01,
+      "state": "liquid",
+      "label": "Chicken Broth"
+    }
+  },
+  "dry_spices": {
+    "salt_table": { "density": 1.21, "state": "solid", "label": "Table Salt" },
+    "salt_kosher_morton": {
+      "density": 0.85,
+      "state": "solid",
+      "label": "Kosher Salt (Morton)"
+    },
+    "black_pepper_ground": {
+      "density": 0.52,
+      "state": "solid",
+      "label": "Black Pepper (Ground)"
+    },
+    "garlic_powder": {
+      "density": 0.64,
+      "state": "solid",
+      "label": "Garlic Powder"
+    },
+    "onion_powder": {
+      "density": 0.51,
+      "state": "solid",
+      "label": "Onion Powder"
+    },
+    "paprika": { "density": 0.46, "state": "solid", "label": "Paprika" },
+    "cumin_ground": {
+      "density": 0.42,
+      "state": "solid",
+      "label": "Cumin (Ground)"
+    },
+    "turmeric_ground": {
+      "density": 0.44,
+      "state": "solid",
+      "label": "Turmeric"
+    },
+    "oregano_dried": {
+      "density": 0.21,
+      "state": "solid",
+      "label": "Oregano (Dried)"
+    },
+    "red_pepper_flakes": {
+      "density": 0.32,
+      "state": "solid",
+      "label": "Red Pepper Flakes"
+    },
+    "chili_powder": {
+      "density": 0.54,
+      "state": "solid",
+      "label": "Chili Powder"
+    }
+  },
+  "pastes_and_aromatics": {
+    "tomato_paste": {
+      "density": 1.13,
+      "state": "solid",
+      "label": "Tomato Paste"
+    },
+    "miso_paste": { "density": 1.25, "state": "solid", "label": "Miso Paste" },
+    "garlic_minced": {
+      "density": 0.92,
+      "state": "solid",
+      "label": "Garlic (Minced)"
+    },
+    "ginger_minced": {
+      "density": 0.95,
+      "state": "solid",
+      "label": "Ginger (Minced)"
+    },
+    "honey": { "density": 1.42, "state": "solid", "label": "Honey" },
+    "dijon_mustard": {
+      "density": 1.05,
+      "state": "solid",
+      "label": "Dijon Mustard"
+    }
+  },
+  "thickeners": {
+    "cornstarch": { "density": 0.55, "state": "solid", "label": "Cornstarch" },
+    "flour_all_purpose": {
+      "density": 0.53,
+      "state": "solid",
+      "label": "All-Purpose Flour"
+    },
+    "sugar_white": { "density": 0.85, "state": "solid", "label": "White Sugar" }
+  }
+}

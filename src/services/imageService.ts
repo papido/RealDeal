@@ -1,7 +1,7 @@
 import {
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_UPLOAD_PRESET,
-} from "@/src/constants";
+} from "@/src/constants/cloudinary";
 import { ResponseType } from "@/src/constants/types";
 import axios from "axios";
 

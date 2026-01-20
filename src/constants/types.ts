@@ -153,3 +153,11 @@ export type ParsedIngredient = {
   unit?: string | null;
   ingredient?: string | null;
 };
+
+export interface Ingredient {
+  density: number; // assume g/ml for solids (bulk density), and for liquids it doesn't matter since we return ml
+  state: "liquid" | "solid";
+  label: string;
+}
+
+export type IngredientsByCategory = Record<string, Record<string, Ingredient>>;
