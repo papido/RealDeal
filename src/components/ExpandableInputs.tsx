@@ -34,7 +34,7 @@ const ExpandableInputs = () => {
     price: string | number,
     weight: string | number,
     quantity: string | number,
-    unit: string
+    unit: string,
   ) => {
     const p = Number(price);
     const w = Number(weight);
@@ -50,7 +50,7 @@ const ExpandableInputs = () => {
     ingredients.price,
     ingredients.weight,
     ingredients.quantity,
-    ingredients.unit
+    ingredients.unit,
   );
 
   const onSelectUnit = () => {
@@ -64,6 +64,9 @@ const ExpandableInputs = () => {
       "fl oz",
       "qt",
       "pt",
+      "pint",
+      "dozen",
+      "quart",
       "gal",
       "piece",
       "Cancel",
@@ -89,7 +92,7 @@ const ExpandableInputs = () => {
                   : prev.quantity,
           }));
         }
-      }
+      },
     );
   };
 
@@ -113,7 +116,7 @@ const ExpandableInputs = () => {
 
     const { weight: convertedWeight, unit: convertedUnit } = convertIngredient(
       weight * quantity,
-      ingredients.unit as Unit
+      ingredients.unit as Unit,
     );
 
     const res = await createIngredients({
@@ -193,10 +196,7 @@ const ExpandableInputs = () => {
               }
               placeholderTextColor="#999"
               multiline={true}
-              style={[
-                styles.input,
-                styles.weightInput,
-              ]}
+              style={[styles.input, styles.weightInput]}
               keyboardType="numeric"
               editable
               value={ingredients.weight}
