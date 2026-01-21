@@ -35,6 +35,11 @@
       "density": 1.01,
       "state": "liquid",
       "label": "Chicken Broth"
+    },
+    "vanilla_extract": {
+      "density": 0.88,
+      "state": "liquid",
+      "label": "Vanilla Extract"
     }
   },
   "dry_spices": {

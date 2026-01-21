@@ -1,8 +1,13 @@
 ﻿import { auth, firestore } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
 import { ParsedIngredient } from "@/src/constants/types";
+import { VolumeUnit } from "@/src/constants/volumeUnits";
 import { useCart } from "@/src/contexts/CartProvider";
 import { useIngredients } from "@/src/contexts/IngredientsProvider";
+import {
+  convertIngredient,
+  findIngredientKeyByName,
+} from "@/src/utils/ingredientConverter";
 import { findCartMatches } from "@/src/utils/ingredientMatching";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -242,6 +247,39 @@ const MenuScreen = () => {
     [ingredientMetaMap]
   );
 
+  const toVolumeUnit = useCallback((unit: string): VolumeUnit | null => {
+    const normalized = unit.toLowerCase().replace(/[^a-z.]/g, "");
+    if (
+      normalized === "tsp" ||
+      normalized === "tsp." ||
+      normalized === "teaspoon" ||
+      normalized === "teaspoons"
+    ) {
+      return "tsp";
+    }
+    if (
+      normalized === "tbsp" ||
+      normalized === "tbsp." ||
+      normalized === "tablespoon" ||
+      normalized === "tablespoons"
+    ) {
+      return "tbsp";
+    }
+    if (normalized === "cup" || normalized === "cups" || normalized === "c" || normalized === "c.") {
+      return "cup";
+    }
+    if (
+      normalized === "floz" ||
+      normalized === "fl.oz" ||
+      normalized === "fl.oz." ||
+      normalized === "fluidounce" ||
+      normalized === "fluidounces"
+    ) {
+      return "fl_oz";
+    }
+    return null;
+  }, []);
+
   const handleDeleteSelected = useCallback(() => {
     if (!uid || !selectedTileId) return;
 
@@ -405,21 +443,42 @@ const MenuScreen = () => {
                                 entry.quantity.toString().replace(/[^\d.]/g, "")
                               )
                             : NaN;
+                          const conversion = (() => {
+                            if (!unitMismatch) return null;
+                            if (!entry.unit || Number.isNaN(quantityValue)) {
+                              return null;
+                            }
+                            const ingredientKey =
+                              findIngredientKeyByName(ingredientName);
+                            if (!ingredientKey) return null;
+                            const volumeUnit = toVolumeUnit(entry.unit);
+                            if (!volumeUnit) return null;
+                            return convertIngredient(
+                              ingredientKey,
+                              quantityValue,
+                              volumeUnit
+                            );
+                          })();
+                          const resolvedMismatch =
+                            !!conversion && !!meta?.unit && conversion.unit === meta.unit;
+                          const effectiveAmount = resolvedMismatch
+                            ? conversion.value
+                            : quantityValue;
                           const totalPrice =
                             !Number.isNaN(unitPriceValue) &&
-                            !Number.isNaN(quantityValue)
-                              ? unitPriceValue * quantityValue
+                            !Number.isNaN(effectiveAmount)
+                              ? unitPriceValue * effectiveAmount
                               : NaN;
-                          const unitPriceLabel = !unitMismatch && meta
-                            ? [unitPriceDisplay, meta.unit]
-                                .filter(Boolean)
-                                .join(" / ")
+                          const priceUnit = conversion?.unit ?? meta?.unit ?? "";
+                          const unitPriceLabel = meta
+                            ? [unitPriceDisplay, priceUnit].filter(Boolean).join(" / ")
                             : "";
                           const totalLabel =
-                            !unitMismatch && !Number.isNaN(totalPrice)
-                            ? `RM ${totalPrice.toFixed(2)}`
+                            !Number.isNaN(totalPrice) ? `RM ${totalPrice.toFixed(2)}` : "";
+                          const conversionLabel = conversion
+                            ? `${conversion.display}`
                             : "";
-                          const metaText = [unitPriceLabel, totalLabel]
+                          const metaText = [unitPriceLabel, conversionLabel, totalLabel]
                             .filter(Boolean)
                             .join(" • ");
 
@@ -431,7 +490,7 @@ const MenuScreen = () => {
                                   styles.tileItemLabel,
                                   !isMatch && styles.tileItemDim,
                                   isMatch && styles.tileItemMatch,
-                                  isMatch && unitMismatch && styles.tileItemWarn,
+                                  isMatch && unitMismatch && !resolvedMismatch && styles.tileItemWarn,
                                 ]}
                               >
                                 {"- "}
@@ -445,7 +504,7 @@ const MenuScreen = () => {
                                     styles.tileItemMeta,
                                     !isMatch && styles.tileItemDim,
                                     isMatch && styles.tileItemMatch,
-                                    isMatch && unitMismatch && styles.tileItemWarn,
+                                    isMatch && unitMismatch && !resolvedMismatch && styles.tileItemWarn,
                                   ]}
                                 >
                                   {metaText}
