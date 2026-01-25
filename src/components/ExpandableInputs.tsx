@@ -63,7 +63,6 @@ const ExpandableInputs = () => {
       "oz",
       "fl oz",
       "qt",
-      "pt",
       "pint",
       "dozen",
       "quart",
@@ -111,13 +110,21 @@ const ExpandableInputs = () => {
     setLoading(true);
 
     const originalName = ingredients.name.trim();
-    const quantity = Number(ingredients.quantity);
+    const quantity =
+      ingredients.unit === "piece" ? 1 : Number(ingredients.quantity);
     const weight = Number(ingredients.weight);
+    const originalQuantity =
+      ingredients.unit === "piece" ? weight : quantity;
+    const totalInput = ingredients.unit === "piece" ? weight : weight * quantity;
 
     const { weight: convertedWeight, unit: convertedUnit } = convertIngredient(
-      weight * quantity,
+      totalInput,
       ingredients.unit as Unit,
     );
+    const convertedUnitPrice =
+      convertedWeight > 0
+        ? (Number(ingredients.price) / convertedWeight).toFixed(4)
+        : "0";
 
     const res = await createIngredients({
       name: originalName,
@@ -126,7 +133,8 @@ const ExpandableInputs = () => {
       weight: convertedWeight,
       unit: convertedUnit,
       originalUnit: ingredients.unit,
-      unitPrice: unitPrice,
+      originalQuantity,
+      unitPrice: convertedUnitPrice,
     } as any);
     setLoading(false);
 

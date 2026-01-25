@@ -5,9 +5,8 @@ export type Unit =
   | "l"
   | "oz"
   | "gallon"
-  | "each"
+  | "piece"
   | "qt"
-  | "pt"
   | "fl oz"
   | "lb";
 
@@ -24,7 +23,6 @@ const CONVERSION_FACTORS = {
   oz: 29.5735, // US fluid ounce
   "fl oz": 29.5735, // US fluid ounce
   qt: 946.353, // US liquid quart
-  pt: 473.176, // US liquid pint
   gallon: 3785.41, // US liquid gallon
 };
 
@@ -62,13 +60,11 @@ export const convertIngredient = (
       return { weight: weight * CONVERSION_FACTORS["fl oz"], unit: "ml" };
     case "qt":
       return { weight: weight * CONVERSION_FACTORS.qt, unit: "ml" };
-    case "pt":
-      return { weight: weight * CONVERSION_FACTORS.pt, unit: "ml" };
     case "gallon":
       return { weight: weight * CONVERSION_FACTORS.gallon, unit: "ml" };
     case "g":
     case "ml":
-    case "each":
+    case "piece":
       return { weight, unit };
     default:
       return { weight, unit };

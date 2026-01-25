@@ -1,7 +1,8 @@
 ﻿import { auth, firestore } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
-import { ParsedIngredient } from "@/src/constants/types";
-import { VolumeUnit } from "@/src/constants/volumeUnits";
+import ingredientsJson from "@/src/constants/ingredients.json";
+import { Ingredient, IngredientsByCategory, ParsedIngredient } from "@/src/constants/types";
+import { VOLUME_UNITS, VolumeUnit } from "@/src/constants/volumeUnits";
 import { useCart } from "@/src/contexts/CartProvider";
 import { useIngredients } from "@/src/contexts/IngredientsProvider";
 import {
@@ -33,12 +34,50 @@ type SavedIngredient = {
   quantity?: string | null;
   unit?: string | null;
   ingredient?: string | null;
+  resolvedQuantity?: number | null;
+  resolvedUnit?: string | null;
+  resolvedDensityEstimated?: boolean | null;
 };
 
 type SavedTile = {
   id: string;
   items: SavedIngredient[];
   createdAt?: any;
+};
+
+const ingredientsCatalog = ingredientsJson as IngredientsByCategory;
+const findIngredientMetaByKey = (ingredientKey: string): Ingredient | null => {
+  for (const category of Object.values(ingredientsCatalog)) {
+    const item = category[ingredientKey];
+    if (item) return item;
+  }
+  return null;
+};
+const getFallbackDensity = (name: string): number | null => {
+  if (/\b(flour|flours)\b/i.test(name)) return 0.53;
+  if (/\b(sugar|brown sugar|caster|granulated)\b/i.test(name)) return 0.85;
+  if (
+    /\b(spice|spices|powder|pepper|paprika|cumin|turmeric|cayenne)\b/i.test(name)
+  ) {
+    return 0.5;
+  }
+  return null;
+};
+const getWeightToGrams = (unit: string): number | null => {
+  const normalized = unit.toLowerCase().replace(/[^a-z]/g, "");
+  if (normalized === "g" || normalized === "gram" || normalized === "grams") {
+    return 1;
+  }
+  if (normalized === "kg" || normalized === "kilogram" || normalized === "kilograms") {
+    return 1000;
+  }
+  if (normalized === "lb" || normalized === "lbs" || normalized === "pound" || normalized === "pounds") {
+    return 453.592;
+  }
+  if (normalized === "oz" || normalized === "ounce" || normalized === "ounces") {
+    return 28.3495;
+  }
+  return null;
 };
 
 const MenuScreen = () => {
@@ -57,6 +96,13 @@ const MenuScreen = () => {
   const [loading, setLoading] = useState(true);
   const [focusTick, setFocusTick] = useState(0);
   const cleanupOnceRef = useRef(false);
+  const [aiConversions, setAiConversions] = useState<
+    Record<
+      string,
+      { value: number; unit: string; display: string; densityEstimated?: boolean }
+    >
+  >({});
+  const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -132,6 +178,7 @@ const MenuScreen = () => {
   const normalizeIngredient = useCallback((value: string): string => {
     const cleaned = value
       .toLowerCase()
+      .replace(/\bchilli\b/g, "chili")
       .replace(/[^a-z0-9]+/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -321,6 +368,284 @@ const MenuScreen = () => {
     });
   }, [router, selectedTile]);
 
+  const handleResolveMismatch = useCallback(
+    async (
+      entry: SavedIngredient,
+      entryIndex: number,
+      entryKey: string,
+      metaUnit?: string | null
+    ) => {
+      if (!metaUnit) return;
+      if (!uid || !selectedTileId) return;
+      if (!entry.ingredient || !entry.unit) return;
+
+      const quantityValue = entry.quantity
+        ? parseFloat(entry.quantity.toString().replace(/[^\d.]/g, ""))
+        : NaN;
+      if (Number.isNaN(quantityValue)) {
+        Alert.alert("Invalid quantity", "Please enter a numeric quantity.");
+        return;
+      }
+
+      setAiLoading((prev) => ({ ...prev, [entryKey]: true }));
+      try {
+        if (metaUnit.toLowerCase() === "piece") {
+          const updatedItems = selectedTileId
+            ? (selectedTile?.items ?? []).map((item, index) =>
+                index === entryIndex
+                  ? {
+                      ...item,
+                      resolvedQuantity: 1,
+                      resolvedUnit: "piece",
+                    }
+                  : item
+              )
+            : selectedTile?.items ?? [];
+
+          await firestore()
+            .collection("users")
+            .doc(uid)
+            .collection("parsedIngredients")
+            .doc(selectedTileId)
+            .set(
+              {
+                items: updatedItems,
+                updatedAt: firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+          setSavedTiles((prev) =>
+            prev.map((tile) =>
+              tile.id === selectedTileId ? { ...tile, items: updatedItems } : tile
+            )
+          );
+          return;
+        }
+
+        const ingredientKey = findIngredientKeyByName(entry.ingredient);
+        const meta = ingredientKey ? findIngredientMetaByKey(ingredientKey) : null;
+        const normalizedUnit = entry.unit.toLowerCase().trim();
+        const volumeUnit = toVolumeUnit(entry.unit);
+        const weightFactor = getWeightToGrams(entry.unit);
+        const directMassToG =
+          normalizedUnit === "kg" ? quantityValue * 1000 : null;
+        const directVolumeToMl =
+          normalizedUnit === "l" ? quantityValue * 1000 : null;
+
+        if (metaUnit.toLowerCase() === "g" && weightFactor !== null) {
+          const gramsValue = quantityValue * weightFactor;
+          const updatedItems = selectedTileId
+            ? (selectedTile?.items ?? []).map((item, index) =>
+                index === entryIndex
+                  ? {
+                      ...item,
+                      quantity: gramsValue,
+                      unit: "g",
+                    }
+                  : item
+              )
+            : selectedTile?.items ?? [];
+
+          await firestore()
+            .collection("users")
+            .doc(uid)
+            .collection("parsedIngredients")
+            .doc(selectedTileId)
+            .set(
+              {
+                items: updatedItems,
+                updatedAt: firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+          setSavedTiles((prev) =>
+            prev.map((tile) =>
+              tile.id === selectedTileId ? { ...tile, items: updatedItems } : tile
+            )
+          );
+          return;
+        }
+
+        if (metaUnit.toLowerCase() === "ml" && directVolumeToMl !== null) {
+          const rounded = directVolumeToMl;
+          const updatedItems = selectedTileId
+            ? (selectedTile?.items ?? []).map((item, index) =>
+                index === entryIndex
+                  ? {
+                      ...item,
+                      quantity: rounded,
+                      unit: "ml",
+                    }
+                  : item
+              )
+            : selectedTile?.items ?? [];
+
+          await firestore()
+            .collection("users")
+            .doc(uid)
+            .collection("parsedIngredients")
+            .doc(selectedTileId)
+            .set(
+              {
+                items: updatedItems,
+                updatedAt: firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+          setSavedTiles((prev) =>
+            prev.map((tile) =>
+              tile.id === selectedTileId ? { ...tile, items: updatedItems } : tile
+            )
+          );
+          return;
+        }
+
+        if (volumeUnit && (metaUnit.toLowerCase() === "g" || metaUnit.toLowerCase() === "ml")) {
+          const mlAmount = quantityValue * VOLUME_UNITS[volumeUnit];
+          const densityValue =
+            typeof meta?.density === "number"
+              ? meta.density
+              : getFallbackDensity(entry.ingredient ?? "");
+          if (metaUnit.toLowerCase() === "g" && densityValue === null) {
+            // No density available for mass conversion; let AI handle it.
+          } else {
+          const converted =
+            metaUnit.toLowerCase() === "ml" ? mlAmount : mlAmount * densityValue;
+          const rounded = converted;
+          const updatedItems = selectedTileId
+            ? (selectedTile?.items ?? []).map((item, index) =>
+                index === entryIndex
+                  ? {
+                      ...item,
+                      quantity: rounded,
+                      unit: metaUnit.toLowerCase(),
+                    }
+                  : item
+              )
+            : selectedTile?.items ?? [];
+
+          await firestore()
+            .collection("users")
+            .doc(uid)
+            .collection("parsedIngredients")
+            .doc(selectedTileId)
+            .set(
+              {
+                items: updatedItems,
+                updatedAt: firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+          setSavedTiles((prev) =>
+            prev.map((tile) =>
+              tile.id === selectedTileId ? { ...tile, items: updatedItems } : tile
+            )
+          );
+          return;
+          }
+        }
+
+        const response = await fetch(
+          "https://us-central1-realdeal-f46e1.cloudfunctions.net/convertIngredientUnit",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ingredientName: entry.ingredient,
+              quantity: quantityValue,
+              unit: entry.unit,
+              targetUnit: metaUnit,
+              density: meta?.density,
+              state: meta?.state,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          let errorDetails = "";
+          try {
+            const errorPayload = await response.json();
+            errorDetails = errorPayload?.details
+              ? ` ${JSON.stringify(errorPayload.details)}`
+              : errorPayload?.error
+                ? ` ${errorPayload.error}`
+                : "";
+          } catch (parseError) {
+            errorDetails = "";
+          }
+          throw new Error(`Conversion failed (${response.status}).${errorDetails}`);
+        }
+
+        const payload = await response.json();
+        const result = payload?.result;
+        const amount = result?.amount;
+        const unit = result?.unit;
+        const densityEstimated = !!result?.densityEstimated;
+
+        if (typeof amount !== "number" || !unit) {
+          Alert.alert("No conversion", "Could not convert this ingredient.");
+          return;
+        }
+
+        if (unit.toLowerCase() !== metaUnit.toLowerCase()) {
+          Alert.alert(
+            "Unit mismatch",
+            `Expected ${metaUnit}, but got ${unit}.`
+          );
+          return;
+        }
+
+        const normalizedAmount = amount;
+        const updatedItems = selectedTileId
+          ? (selectedTile?.items ?? []).map((item, index) =>
+              index === entryIndex
+                ? {
+                    ...item,
+                    quantity: normalizedAmount,
+                    unit,
+                    resolvedDensityEstimated: densityEstimated,
+                  }
+                : item
+            )
+          : selectedTile?.items ?? [];
+
+        await firestore()
+          .collection("users")
+          .doc(uid)
+          .collection("parsedIngredients")
+          .doc(selectedTileId)
+          .set(
+            {
+              items: updatedItems,
+              updatedAt: firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+        setSavedTiles((prev) =>
+          prev.map((tile) =>
+            tile.id === selectedTileId ? { ...tile, items: updatedItems } : tile
+          )
+        );
+        setAiConversions((prev) => {
+          const next = { ...prev };
+          delete next[entryKey];
+          return next;
+        });
+      } catch (error) {
+        console.error("AI conversion error:", error);
+        Alert.alert("Conversion failed", "Please try again.");
+      } finally {
+        setAiLoading((prev) => ({ ...prev, [entryKey]: false }));
+      }
+    },
+    [uid, selectedTileId, selectedTile]
+  );
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -416,21 +741,36 @@ const MenuScreen = () => {
                     Green = in cart • Yellow = unit mismatch
                   </Text>
                   <View style={styles.tileList}>
-                    {selectedTile.items.map((entry, entryIndex) => (
-                      <View
-                        key={`${selectedTile.id}-${entryIndex}`}
-                        style={styles.tileItemRow}
-                      >
-                        {(() => {
+                    {(() => {
+                      let totalSum = 0;
+                      const rows = selectedTile.items.map((entry, entryIndex) => (
+                        <View
+                          key={`${selectedTile.id}-${entryIndex}`}
+                          style={styles.tileItemRow}
+                        >
+                          {(() => {
                           const ingredientName = entry.ingredient ?? "";
                           const normalizedName =
                             normalizeIngredient(ingredientName);
                           const isMatch = isMatchedIngredient(normalizedName);
                           const meta = findIngredientMeta(normalizedName);
+                          const entryKey = `${selectedTile.id}-${entryIndex}`;
+                          const aiConversion = aiConversions[entryKey];
                           const entryUnit = entry.unit?.toLowerCase().trim() ?? "";
                           const metaUnit = meta?.unit?.toLowerCase().trim() ?? "";
+                          const resolvedUnit =
+                            entry.resolvedUnit?.toLowerCase().trim() ?? "";
+                          const resolvedQuantityValue =
+                            typeof entry.resolvedQuantity === "number"
+                              ? entry.resolvedQuantity
+                              : NaN;
+                          const densityEstimated = !!entry.resolvedDensityEstimated;
+                          const autoPieceResolved = metaUnit === "piece";
                           const unitMismatch =
                             !!entryUnit && !!metaUnit && entryUnit !== metaUnit;
+                          const isToTaste = /\bto taste\b/i.test(entryUnit);
+                          const isSalt = normalizedName.includes("salt");
+                          const toTasteAmount = isToTaste && isSalt ? 0.5 : NaN;
                           const unitPriceRaw = meta?.unitPrice?.toString() ?? "";
                           const unitPriceDisplay = unitPriceRaw
                             .replace(/rm\s*/i, "")
@@ -444,41 +784,125 @@ const MenuScreen = () => {
                               )
                             : NaN;
                           const conversion = (() => {
-                            if (!unitMismatch) return null;
+                            if (!unitMismatch || !Number.isNaN(toTasteAmount)) {
+                              return null;
+                            }
                             if (!entry.unit || Number.isNaN(quantityValue)) {
                               return null;
                             }
+                            const volumeUnit = toVolumeUnit(entry.unit);
+                            const weightFactor = getWeightToGrams(entry.unit);
+                            if (!volumeUnit && !weightFactor) return null;
+
                             const ingredientKey =
                               findIngredientKeyByName(ingredientName);
-                            if (!ingredientKey) return null;
-                            const volumeUnit = toVolumeUnit(entry.unit);
-                            if (!volumeUnit) return null;
-                            return convertIngredient(
-                              ingredientKey,
-                              quantityValue,
-                              volumeUnit
-                            );
+                            if (ingredientKey) {
+                              const viaCatalog = convertIngredient(
+                                ingredientKey,
+                                quantityValue,
+                                volumeUnit
+                              );
+                              if (viaCatalog) return viaCatalog;
+                            }
+
+                            if (
+                              meta?.unit &&
+                              (meta.unit === "g" || meta.unit === "ml")
+                            ) {
+                              if (meta.unit === "g" && weightFactor) {
+                                const gramsValue = quantityValue * weightFactor;
+                                return {
+                                  value: gramsValue,
+                                  unit: "g",
+                                  display: `${gramsValue} g`,
+                                };
+                              }
+                              if (volumeUnit) {
+                                const mlAmount =
+                                  quantityValue * VOLUME_UNITS[volumeUnit];
+                                const densityValue =
+                                  typeof meta?.density === "number"
+                                    ? meta.density
+                                    : getFallbackDensity(ingredientName);
+                                if (meta.unit === "ml") {
+                                  return {
+                                    value: mlAmount,
+                                    unit: "ml",
+                                    display: `${mlAmount} ml`,
+                                  };
+                                }
+                                if (densityValue !== null) {
+                                  const converted = mlAmount * densityValue;
+                                  return {
+                                    value: converted,
+                                    unit: "g",
+                                    display: `${converted} g`,
+                                  };
+                                }
+                              }
+                            }
+
+                            return null;
                           })();
                           const resolvedMismatch =
-                            !!conversion && !!meta?.unit && conversion.unit === meta.unit;
+                            !Number.isNaN(toTasteAmount) ||
+                            (!!conversion &&
+                              !!meta?.unit &&
+                              conversion.unit === meta.unit) ||
+                            (!!aiConversion &&
+                              !!meta?.unit &&
+                              aiConversion.unit.toLowerCase() === meta.unit.toLowerCase()) ||
+                            (!!resolvedUnit &&
+                              !!metaUnit &&
+                              resolvedUnit === metaUnit) ||
+                            autoPieceResolved;
                           const effectiveAmount = resolvedMismatch
-                            ? conversion.value
+                            ? !Number.isNaN(toTasteAmount)
+                              ? toTasteAmount
+                              : autoPieceResolved
+                                ? 1
+                                : !Number.isNaN(resolvedQuantityValue) &&
+                                    resolvedUnit === metaUnit
+                                  ? resolvedQuantityValue
+                                  : aiConversion?.value ?? conversion?.value
                             : quantityValue;
                           const totalPrice =
                             !Number.isNaN(unitPriceValue) &&
                             !Number.isNaN(effectiveAmount)
                               ? unitPriceValue * effectiveAmount
                               : NaN;
-                          const priceUnit = conversion?.unit ?? meta?.unit ?? "";
+                          if (!Number.isNaN(totalPrice)) {
+                            totalSum += totalPrice;
+                          }
+                          const priceUnit = !Number.isNaN(toTasteAmount)
+                            ? "g"
+                            : autoPieceResolved
+                              ? "piece"
+                              : resolvedUnit && resolvedUnit === metaUnit
+                                ? resolvedUnit
+                                : aiConversion?.unit ?? conversion?.unit ?? meta?.unit ?? "";
                           const unitPriceLabel = meta
                             ? [unitPriceDisplay, priceUnit].filter(Boolean).join(" / ")
                             : "";
                           const totalLabel =
                             !Number.isNaN(totalPrice) ? `RM ${totalPrice.toFixed(2)}` : "";
-                          const conversionLabel = conversion
-                            ? `${conversion.display}`
-                            : "";
-                          const metaText = [unitPriceLabel, conversionLabel, totalLabel]
+                          const conversionLabel = !Number.isNaN(toTasteAmount)
+                            ? `${toTasteAmount} g`
+                            : autoPieceResolved
+                              ? "1 piece"
+                              : resolvedUnit &&
+                                  resolvedUnit === metaUnit &&
+                                  !Number.isNaN(resolvedQuantityValue)
+                                ? `${resolvedQuantityValue} ${resolvedUnit}`
+                                : aiConversion
+                                  ? aiConversion.display
+                                  : conversion
+                                    ? `${conversion.display}`
+                                    : "";
+                          const showResolveButton =
+                            isMatch && unitMismatch && !resolvedMismatch;
+                          const densityFlag = densityEstimated ? "AI density" : "";
+                          const metaText = [unitPriceLabel, conversionLabel, densityFlag, totalLabel]
                             .filter(Boolean)
                             .join(" • ");
 
@@ -510,11 +934,45 @@ const MenuScreen = () => {
                                   {metaText}
                                 </Text>
                               ) : null}
+                              {showResolveButton ? (
+                                <TouchableOpacity
+                                  style={[
+                                    styles.resolveButton,
+                                    aiLoading[entryKey] && styles.resolveButtonDisabled,
+                                  ]}
+                                  onPress={() =>
+                                    handleResolveMismatch(
+                                      entry,
+                                      entryIndex,
+                                      entryKey,
+                                      meta?.unit ?? null
+                                    )
+                                  }
+                                  disabled={aiLoading[entryKey]}
+                                >
+                                  <Text style={styles.resolveButtonText}>
+                                    {aiLoading[entryKey] ? "Fixing..." : "Fix"}
+                                  </Text>
+                                </TouchableOpacity>
+                              ) : null}
                             </>
                           );
                         })()}
-                      </View>
-                    ))}
+                        </View>
+                      ));
+
+                      return (
+                        <>
+                          {rows}
+                          <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Total</Text>
+                            <Text style={styles.totalValue}>
+                              {totalSum > 0 ? `RM ${totalSum.toFixed(2)}` : "RM -"}
+                            </Text>
+                          </View>
+                        </>
+                      );
+                    })()}
                   </View>
                 </View>
               )}
@@ -689,5 +1147,38 @@ const styles = StyleSheet.create({
   },
   tileItemWarn: {
     color: "#ca8a04",
+  },
+  totalRow: {
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  totalLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.black,
+  },
+  totalValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.black,
+  },
+  resolveButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#0b7a2a",
+  },
+  resolveButtonDisabled: {
+    opacity: 0.6,
+  },
+  resolveButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

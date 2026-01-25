@@ -15,6 +15,10 @@ export const parseENLine = (line: string): ParsedIngredient => {
   const hasToTaste = /\bto taste\b/i.test(line);
   const gramMatch = line.match(/(\d+(?:\.\d+)?)\s*(g|grams?|gram)\b/i);
 
+  if (unit && /\b(small|large)\b/i.test(unit)) {
+    unit = "piece";
+  }
+
   if (!unit) {
     if (/\bpinch\b/i.test(line)) unit = "pinch";
     else if (/\bslices?\b/i.test(line)) unit = "slice";
@@ -34,6 +38,7 @@ export const parseENLine = (line: string): ParsedIngredient => {
 
   if (ingredient) {
     ingredient = ingredient
+      .replace(/\b(small|large)\b/gi, "")
       .replace(/\bslices?\b/gi, "")
       .replace(/\bpinch\b/gi, "")
       .replace(/\bto taste\b/gi, "")

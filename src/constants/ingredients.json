@@ -49,10 +49,10 @@
       "state": "solid",
       "label": "Kosher Salt (Morton)"
     },
-    "black_pepper_ground": {
+    "black_pepper": {
       "density": 0.52,
       "state": "solid",
-      "label": "Black Pepper (Ground)"
+      "label": "Black Pepper"
     },
     "garlic_powder": {
       "density": 0.64,
@@ -85,6 +85,11 @@
       "state": "solid",
       "label": "Red Pepper Flakes"
     },
+    "cayenne_pepper": {
+      "density": 0.5,
+      "state": "solid",
+      "label": "Cayenne Pepper"
+    },
     "chili_powder": {
       "density": 0.54,
       "state": "solid",
@@ -113,6 +118,11 @@
       "density": 1.05,
       "state": "solid",
       "label": "Dijon Mustard"
+    },
+    "baking_soda": {
+      "density": 1.2,
+      "state": "solid",
+      "label": "Baking Soda"
     }
   },
   "thickeners": {

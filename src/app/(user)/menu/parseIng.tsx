@@ -4,6 +4,7 @@ import { ParsedIngredient } from "@/src/constants/types";
 import { parseENLine } from "@/src/utils/enParser";
 import { useLocalSearchParams } from "expo-router";
 import React, { JSX, useEffect, useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Alert,
   Button as RNButton,
@@ -92,6 +93,35 @@ export default function IngredientParser(): JSX.Element {
     setDraftIngredient("");
   };
 
+  const handleDeleteIngredient = (index: number): void => {
+    Alert.alert("Delete ingredient", "Remove this ingredient?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          setParsedIngredients((prev) =>
+            prev.filter((_, itemIndex) => itemIndex !== index)
+          );
+          if (editingIndex === index) {
+            setEditingIndex(null);
+            setDraftIngredient("");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleAddIngredient = (): void => {
+    setParsedIngredients((prev) => [
+      ...prev,
+      { quantity: "", unit: "", ingredient: "" },
+    ]);
+    setEditAllMode(true);
+    setEditingIndex(null);
+    setDraftIngredient("");
+  };
+
   const handleSave = async (): Promise<void> => {
     const cleanIngredients = parsedIngredients
       .map(({ quantity, unit, ingredient }) => ({
@@ -172,7 +202,7 @@ export default function IngredientParser(): JSX.Element {
               <Text style={[styles.headerText, styles.cellGrow]}>
                 Ingredient
               </Text>
-              <Text style={styles.headerText}>Edit</Text>
+              <Text style={styles.headerText}>Actions</Text>
             </View>
           ) : null
         }
@@ -232,19 +262,60 @@ export default function IngredientParser(): JSX.Element {
                   )}
 
                   {isEditing ? (
-                    <Pressable onPress={doneEdit} style={styles.linkButton}>
-                      <Text style={styles.linkButtonText}>Done</Text>
-                    </Pressable>
+                    <View style={styles.actionButtons}>
+                      <Pressable onPress={doneEdit} style={styles.linkButton}>
+                        <Text style={styles.linkButtonText}>Done</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleDeleteIngredient(index)}
+                        style={styles.linkButton}
+                        accessibilityLabel="Delete ingredient"
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color="#b91c1c"
+                        />
+                      </Pressable>
+                    </View>
                   ) : (
-                    <Pressable onPress={() => startEdit(index)}>
-                      <Text style={styles.linkButtonText}>Edit</Text>
-                    </Pressable>
+                    <View style={styles.actionButtons}>
+                      <Pressable
+                        onPress={() => startEdit(index)}
+                        style={styles.iconButton}
+                        accessibilityLabel="Edit ingredient"
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={18}
+                          color="#1a73e8"
+                        />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleDeleteIngredient(index)}
+                        style={styles.iconButton}
+                        accessibilityLabel="Delete ingredient"
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color="#b91c1c"
+                        />
+                      </Pressable>
+                    </View>
                   )}
                 </>
               )}
             </View>
           );
         }}
+        ListFooterComponent={
+          parsedIngredients.length ? (
+            <View style={styles.listFooter}>
+              <RNButton title="Add" onPress={handleAddIngredient} />
+            </View>
+          ) : null
+        }
       />
 
       {editAllMode ? (
@@ -344,9 +415,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   linkButtonText: {
     color: "#1a73e8",
     fontWeight: "600",
+  },
+  iconButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  listFooter: {
+    marginTop: 8,
+    alignItems: "center",
   },
   saveButtonText: {
     color: "#fff",

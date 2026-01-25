@@ -145,6 +145,8 @@ export type IngredientsType = {
   weight: string;
   unit: string;
   unitPrice: string;
+  originalUnit?: string;
+  originalQuantity?: number;
   createdAt?: Timestamp;
 };
 

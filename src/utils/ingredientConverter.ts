@@ -7,6 +7,7 @@ const ingredients = ingredientsJson as IngredientsByCategory;
 const normalize = (value: string): string =>
   value
     .toLowerCase()
+    .replace(/\bchilli\b/g, "chili")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -64,10 +65,10 @@ export const convertIngredient = (
   const volumeInMl = amount * VOLUME_UNITS[unit];
 
   if (item.state === "liquid") {
-    const mlValue = Math.round(volumeInMl);
+    const mlValue = Number(volumeInMl.toFixed(2));
     return { value: mlValue, unit: "ml" as const, display: `${mlValue} ml` };
   }
 
-  const gramsValue = Math.round(volumeInMl * item.density);
+  const gramsValue = Number((volumeInMl * item.density).toFixed(2));
   return { value: gramsValue, unit: "g" as const, display: `${gramsValue} g` };
 };

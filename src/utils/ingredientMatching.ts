@@ -4,6 +4,7 @@ import { CartItem, ParsedIngredient } from "@/src/constants/types";
 const normalize = (str: string): string => {
   const cleaned = str
     .toLowerCase()
+    .replace(/\bchilli\b/g, "chili")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -85,6 +86,15 @@ export const isIngredientInCart = (
     const maxSize = Math.max(targetTokens.size, cartTokens.size);
 
     if (targetTokens.size <= 2) {
+      if (
+        targetTokens.size === 2 &&
+        commonCount >= 1 &&
+        [...targetTokens].some((t) =>
+          ["powder", "ground", "flake", "flakes"].includes(t)
+        )
+      ) {
+        return true;
+      }
       if (commonCount === targetTokens.size) return true;
       continue;
     }
