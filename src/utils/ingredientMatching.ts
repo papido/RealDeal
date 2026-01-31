@@ -86,6 +86,28 @@ export const isIngredientInCart = (
     const maxSize = Math.max(targetTokens.size, cartTokens.size);
 
     if (targetTokens.size <= 2) {
+      // Allow descriptor + base matches like "kosher salt" vs "salt".
+      if (targetTokens.has("salt") && cartTokens.has("salt")) {
+        return true;
+      }
+      // Allow prep descriptors like "grated zucchini" vs "zucchini".
+      if (
+        targetTokens.size === 2 &&
+        commonCount === 1 &&
+        [...targetTokens].some((t) =>
+          [
+            "grated",
+            "shredded",
+            "chopped",
+            "diced",
+            "minced",
+            "sliced",
+            "peeled",
+          ].includes(t)
+        )
+      ) {
+        return true;
+      }
       if (
         targetTokens.size === 2 &&
         commonCount >= 1 &&

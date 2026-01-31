@@ -749,14 +749,19 @@ const MenuScreen = () => {
                           style={styles.tileItemRow}
                         >
                           {(() => {
-                          const ingredientName = entry.ingredient ?? "";
+                          const ingredientName =
+                            typeof entry.ingredient === "string"
+                              ? entry.ingredient
+                              : "";
                           const normalizedName =
                             normalizeIngredient(ingredientName);
                           const isMatch = isMatchedIngredient(normalizedName);
                           const meta = findIngredientMeta(normalizedName);
                           const entryKey = `${selectedTile.id}-${entryIndex}`;
                           const aiConversion = aiConversions[entryKey];
-                          const entryUnit = entry.unit?.toLowerCase().trim() ?? "";
+                          const rawUnit =
+                            typeof entry.unit === "string" ? entry.unit : "";
+                          const entryUnit = rawUnit.toLowerCase().trim();
                           const metaUnit = meta?.unit?.toLowerCase().trim() ?? "";
                           const resolvedUnit =
                             entry.resolvedUnit?.toLowerCase().trim() ?? "";
@@ -783,6 +788,16 @@ const MenuScreen = () => {
                                 entry.quantity.toString().replace(/[^\d.]/g, "")
                               )
                             : NaN;
+                          const booleanQuantity =
+                            entry.quantity === true ? 1 : NaN;
+                          const resolvedQuantityForDisplay = !Number.isNaN(quantityValue)
+                            ? quantityValue
+                            : !Number.isNaN(booleanQuantity)
+                              ? booleanQuantity
+                              : NaN;
+                          const displayQuantity = !Number.isNaN(resolvedQuantityForDisplay)
+                            ? resolvedQuantityForDisplay
+                            : "?";
                           const conversion = (() => {
                             if (!unitMismatch || !Number.isNaN(toTasteAmount)) {
                               return null;
@@ -865,7 +880,11 @@ const MenuScreen = () => {
                                     resolvedUnit === metaUnit
                                   ? resolvedQuantityValue
                                   : aiConversion?.value ?? conversion?.value
-                            : quantityValue;
+                            : !Number.isNaN(quantityValue)
+                              ? quantityValue
+                              : !Number.isNaN(booleanQuantity)
+                                ? booleanQuantity
+                                : NaN;
                           const totalPrice =
                             !Number.isNaN(unitPriceValue) &&
                             !Number.isNaN(effectiveAmount)
@@ -881,11 +900,15 @@ const MenuScreen = () => {
                               : resolvedUnit && resolvedUnit === metaUnit
                                 ? resolvedUnit
                                 : aiConversion?.unit ?? conversion?.unit ?? meta?.unit ?? "";
-                          const unitPriceLabel = meta
-                            ? [unitPriceDisplay, priceUnit].filter(Boolean).join(" / ")
+                          const unitPriceLabel =
+                            isMatch && meta && !Number.isNaN(unitPriceValue)
+                              ? [unitPriceDisplay, priceUnit].filter(Boolean).join(" / ")
+                              : "";
+                          const totalLabel = isMatch
+                            ? !Number.isNaN(totalPrice)
+                              ? `RM ${totalPrice.toFixed(2)}`
+                              : ""
                             : "";
-                          const totalLabel =
-                            !Number.isNaN(totalPrice) ? `RM ${totalPrice.toFixed(2)}` : "";
                           const conversionLabel = !Number.isNaN(toTasteAmount)
                             ? `${toTasteAmount} g`
                             : autoPieceResolved
@@ -903,7 +926,11 @@ const MenuScreen = () => {
                             isMatch && unitMismatch && !resolvedMismatch;
                           const densityFlag = densityEstimated ? "AI density" : "";
                           const metaText = [unitPriceLabel, conversionLabel, densityFlag, totalLabel]
-                            .filter(Boolean)
+                            .filter((value) => {
+                              if (!value) return false;
+                              const text = value.toString().trim().toLowerCase();
+                              return text !== "true" && text !== "false";
+                            })
                             .join(" • ");
 
                           return (
@@ -918,11 +945,11 @@ const MenuScreen = () => {
                                 ]}
                               >
                                 {"- "}
-                                {(entry.quantity ?? "?").toString()}{" "}
-                                {entry.unit ? `${entry.unit} ` : ""}
+                                {displayQuantity}{" "}
+                                {rawUnit ? `${rawUnit} ` : ""}
                                 {ingredientName || "Unnamed"}
                               </Text>
-                              {metaText ? (
+                              {isMatch && metaText ? (
                                 <Text
                                   style={[
                                     styles.tileItemMeta,
