@@ -88,13 +88,7 @@ export const isIngredientInCart = (
     if (targetTokens.size <= 2) {
       // Allow descriptor + base matches like "kosher salt" vs "salt".
       if (targetTokens.has("salt") && cartTokens.has("salt")) {
-        if (targetTokens.size === 1 && cartTokens.size === 1) {
-          return true;
-        }
-        if (targetTokens.size === 2 && cartTokens.size === 2 && commonCount === 2) {
-          return true;
-        }
-        continue;
+        return true;
       }
       // Allow prep descriptors like "grated zucchini" vs "zucchini".
       if (

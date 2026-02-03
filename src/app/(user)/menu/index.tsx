@@ -397,18 +397,23 @@ const MenuScreen = () => {
       if (direct) return direct;
 
       let bestMatch: { unit?: string; unitPrice?: string } | null = null;
+      let bestScore = 0;
       let bestLength = 0;
 
       for (const [key, value] of ingredientMetaMap.entries()) {
         if (!key) continue;
-        if (
-          normalizedName.includes(key) ||
-          key.includes(normalizedName)
-        ) {
-          if (key.length > bestLength) {
-            bestMatch = value;
-            bestLength = key.length;
-          }
+        const includesMatch =
+          normalizedName.includes(key) || key.includes(normalizedName);
+        const bothSalt =
+          normalizedName.includes("salt") && key.includes("salt");
+
+        if (!includesMatch && !bothSalt) continue;
+
+        const score = includesMatch ? 2 : 1;
+        if (score > bestScore || (score === bestScore && key.length > bestLength)) {
+          bestMatch = value;
+          bestScore = score;
+          bestLength = key.length;
         }
       }
 
@@ -833,6 +838,20 @@ const MenuScreen = () => {
                     <Text style={styles.tileTitle}>
                       Selected Ingredients ({selectedTile.items.length})
                     </Text>
+                    <TouchableOpacity
+                      style={styles.togglePricesButton}
+                      onPress={() => setShowSelectedPrices((prev) => !prev)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        showSelectedPrices
+                          ? "Hide selected ingredient prices"
+                          : "Show selected ingredient prices"
+                      }
+                    >
+                      <Text style={styles.togglePricesText}>
+                        {showSelectedPrices ? "Hide prices" : "Show prices"}
+                      </Text>
+                    </TouchableOpacity>
                     <View style={styles.tileActions}>
                       <TouchableOpacity
                         onPress={handleEditSelected}
@@ -1009,7 +1028,9 @@ const MenuScreen = () => {
                             ? !Number.isNaN(toTasteAmount)
                               ? toTasteAmount
                               : autoPieceResolved
-                                ? 1
+                                ? !Number.isNaN(quantityValue)
+                                  ? quantityValue
+                                  : 1
                                 : !Number.isNaN(resolvedQuantityValue) &&
                                     resolvedUnit === metaUnit
                                   ? resolvedQuantityValue
@@ -1051,7 +1072,7 @@ const MenuScreen = () => {
                           const conversionLabel = !Number.isNaN(toTasteAmount)
                             ? `${toTasteAmount} g`
                             : autoPieceResolved
-                              ? "1 piece"
+                              ? `${!Number.isNaN(quantityValue) ? quantityValue : 1} piece`
                               : resolvedUnit &&
                                   resolvedUnit === metaUnit &&
                                   !Number.isNaN(resolvedQuantityValue)
@@ -1217,20 +1238,6 @@ const MenuScreen = () => {
                       );
                     })()}
                   </View>
-                  <TouchableOpacity
-                    style={styles.togglePricesButton}
-                    onPress={() => setShowSelectedPrices((prev) => !prev)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showSelectedPrices
-                        ? "Hide selected ingredient prices"
-                        : "Show selected ingredient prices"
-                    }
-                  >
-                    <Text style={styles.togglePricesText}>
-                      {showSelectedPrices ? "Hide prices" : "Show prices"}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -1449,10 +1456,10 @@ const styles = StyleSheet.create({
     color: colors.black,
   },
   togglePricesButton: {
-    marginTop: 12,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     alignItems: "center",
   },
