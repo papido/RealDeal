@@ -9,6 +9,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import mobileAds from "react-native-google-mobile-ads";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
 import { IngredientsProvider } from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
@@ -64,6 +65,8 @@ const RootLayout = () => {
       SplashScreen.hideAsync();
     }
 
+    mobileAds().initialize();
+
     // Suppress specific console warnings
     const originalWarn = console.warn;
     console.warn = (...args) => {
@@ -98,4 +101,3 @@ const RootLayout = () => {
 };
 
 export default RootLayout;
-

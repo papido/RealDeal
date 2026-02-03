@@ -40,7 +40,7 @@ interface ConvertedIngredient {
  */
 export const convertIngredient = (
   weight: number,
-  unit: Unit
+  unit: Unit,
 ): ConvertedIngredient => {
   if (isNaN(weight)) {
     // If weight is not a number (e.g., empty input), default to 0.
@@ -79,9 +79,9 @@ export const convertIngredient = (
  */
 export const convertWeightFromBase = (
   weightInBase: number,
-  targetUnit: Unit
+  targetUnit: Unit,
 ): number => {
-  if (targetUnit === "g" || targetUnit === "ml" || targetUnit === "each") {
+  if (targetUnit === "g" || targetUnit === "ml" || targetUnit === "piece") {
     return weightInBase;
   }
   const factor =

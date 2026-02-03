@@ -80,6 +80,94 @@ const getWeightToGrams = (unit: string): number | null => {
   return null;
 };
 
+const toBaseAmount = (
+  value: number,
+  unitRaw: string
+): { amount: number; unit: "g" | "ml" | "piece" } | null => {
+  const normalized = unitRaw.toLowerCase().replace(/[^a-z.]/g, "");
+  if (!normalized) return null;
+
+  if (
+    normalized === "g" ||
+    normalized === "gram" ||
+    normalized === "grams"
+  ) {
+    return { amount: value, unit: "g" };
+  }
+  if (
+    normalized === "kg" ||
+    normalized === "kilogram" ||
+    normalized === "kilograms"
+  ) {
+    return { amount: value * 1000, unit: "g" };
+  }
+  if (
+    normalized === "ml" ||
+    normalized === "milliliter" ||
+    normalized === "milliliters"
+  ) {
+    return { amount: value, unit: "ml" };
+  }
+  if (
+    normalized === "l" ||
+    normalized === "liter" ||
+    normalized === "liters"
+  ) {
+    return { amount: value * 1000, unit: "ml" };
+  }
+  if (
+    normalized === "piece" ||
+    normalized === "pieces" ||
+    normalized === "pc" ||
+    normalized === "pcs"
+  ) {
+    return { amount: value, unit: "piece" };
+  }
+
+  const weightFactor = getWeightToGrams(unitRaw);
+  if (weightFactor !== null) {
+    return { amount: value * weightFactor, unit: "g" };
+  }
+
+  let volumeUnit: VolumeUnit | null = null;
+  if (
+    normalized === "tsp" ||
+    normalized === "tsp." ||
+    normalized === "teaspoon" ||
+    normalized === "teaspoons"
+  ) {
+    volumeUnit = "tsp";
+  } else if (
+    normalized === "tbsp" ||
+    normalized === "tbsp." ||
+    normalized === "tablespoon" ||
+    normalized === "tablespoons"
+  ) {
+    volumeUnit = "tbsp";
+  } else if (
+    normalized === "cup" ||
+    normalized === "cups" ||
+    normalized === "c" ||
+    normalized === "c."
+  ) {
+    volumeUnit = "cup";
+  } else if (
+    normalized === "floz" ||
+    normalized === "fl.oz" ||
+    normalized === "fl.oz." ||
+    normalized === "fluidounce" ||
+    normalized === "fluidounces"
+  ) {
+    volumeUnit = "fl_oz";
+  }
+
+  if (volumeUnit) {
+    return { amount: value * VOLUME_UNITS[volumeUnit], unit: "ml" };
+  }
+
+  return null;
+};
+
 const MenuScreen = () => {
   const { ingredients: ingredientsFromCart } = useLocalSearchParams<{
     ingredients?: string;
@@ -103,6 +191,7 @@ const MenuScreen = () => {
     >
   >({});
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+  const [showSelectedPrices, setShowSelectedPrices] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -236,6 +325,42 @@ const MenuScreen = () => {
         .filter(Boolean)
     );
   }, [selectedTile, cartItems, ingredients, focusTick, normalizeIngredient]);
+  const ingredientStockMap = useMemo(() => {
+    const map = new Map<string, { amount: number; unit: "g" | "ml" | "piece" }>();
+    ingredients.forEach((item) => {
+      const name = item.name ?? "";
+      const normalizedName = normalizeIngredient(name);
+      if (!normalizedName) return;
+
+      const quantityValue = item.quantity
+        ? parseFloat(item.quantity.toString().replace(/[^\d.]/g, ""))
+        : NaN;
+      const unitWeightValue = item.weight
+        ? parseFloat(item.weight.toString().replace(/[^\d.]/g, ""))
+        : NaN;
+      if (Number.isNaN(quantityValue) || Number.isNaN(unitWeightValue)) return;
+
+      const baseUnitWeight = toBaseAmount(unitWeightValue, item.unit ?? "");
+      if (!baseUnitWeight) return;
+
+      const totalAmount = quantityValue * baseUnitWeight.amount;
+      const existing = map.get(normalizedName);
+      if (existing && existing.unit === baseUnitWeight.unit) {
+        map.set(normalizedName, {
+          amount: existing.amount + totalAmount,
+          unit: existing.unit,
+        });
+        return;
+      }
+      if (!existing) {
+        map.set(normalizedName, {
+          amount: totalAmount,
+          unit: baseUnitWeight.unit,
+        });
+      }
+    });
+    return map;
+  }, [ingredients, normalizeIngredient]);
 
   const ingredientMetaMap = useMemo(() => {
     const map = new Map<string, { unit?: string; unitPrice?: string }>();
@@ -440,8 +565,8 @@ const MenuScreen = () => {
                 index === entryIndex
                   ? {
                       ...item,
-                      quantity: gramsValue,
-                      unit: "g",
+                      resolvedQuantity: gramsValue,
+                      resolvedUnit: "g",
                     }
                   : item
               )
@@ -475,8 +600,8 @@ const MenuScreen = () => {
                 index === entryIndex
                   ? {
                       ...item,
-                      quantity: rounded,
-                      unit: "ml",
+                      resolvedQuantity: rounded,
+                      resolvedUnit: "ml",
                     }
                   : item
               )
@@ -520,8 +645,8 @@ const MenuScreen = () => {
                 index === entryIndex
                   ? {
                       ...item,
-                      quantity: rounded,
-                      unit: metaUnit.toLowerCase(),
+                      resolvedQuantity: rounded,
+                      resolvedUnit: metaUnit.toLowerCase(),
                     }
                   : item
               )
@@ -605,8 +730,8 @@ const MenuScreen = () => {
               index === entryIndex
                 ? {
                     ...item,
-                    quantity: normalizedAmount,
-                    unit,
+                    resolvedQuantity: normalizedAmount,
+                    resolvedUnit: unit,
                     resolvedDensityEstimated: densityEstimated,
                   }
                 : item
@@ -737,18 +862,22 @@ const MenuScreen = () => {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <Text style={styles.legendText}>
-                    Green = in cart • Yellow = unit mismatch
-                  </Text>
+                  <View style={styles.legendRow}>
+                    <Text style={[styles.legendPill, styles.legendGreen]}>
+                      Green = in cart
+                    </Text>
+                    <Text style={[styles.legendPill, styles.legendYellow]}>
+                      Yellow = unit mismatch
+                    </Text>
+                    <Text style={[styles.legendPill, styles.legendRed]}>
+                      Red = not enough
+                    </Text>
+                  </View>
                   <View style={styles.tileList}>
                     {(() => {
                       let totalSum = 0;
-                      const rows = selectedTile.items.map((entry, entryIndex) => (
-                        <View
-                          key={`${selectedTile.id}-${entryIndex}`}
-                          style={styles.tileItemRow}
-                        >
-                          {(() => {
+                      const computedEntries = selectedTile.items.map(
+                        (entry, entryIndex) => {
                           const ingredientName =
                             typeof entry.ingredient === "string"
                               ? entry.ingredient
@@ -762,21 +891,25 @@ const MenuScreen = () => {
                           const rawUnit =
                             typeof entry.unit === "string" ? entry.unit : "";
                           const entryUnit = rawUnit.toLowerCase().trim();
-                          const metaUnit = meta?.unit?.toLowerCase().trim() ?? "";
+                          const metaUnit =
+                            meta?.unit?.toLowerCase().trim() ?? "";
                           const resolvedUnit =
                             entry.resolvedUnit?.toLowerCase().trim() ?? "";
                           const resolvedQuantityValue =
                             typeof entry.resolvedQuantity === "number"
                               ? entry.resolvedQuantity
                               : NaN;
-                          const densityEstimated = !!entry.resolvedDensityEstimated;
+                          const densityEstimated =
+                            !!entry.resolvedDensityEstimated;
                           const autoPieceResolved = metaUnit === "piece";
                           const unitMismatch =
                             !!entryUnit && !!metaUnit && entryUnit !== metaUnit;
                           const isToTaste = /\bto taste\b/i.test(entryUnit);
                           const isSalt = normalizedName.includes("salt");
-                          const toTasteAmount = isToTaste && isSalt ? 0.5 : NaN;
-                          const unitPriceRaw = meta?.unitPrice?.toString() ?? "";
+                          const toTasteAmount =
+                            isToTaste && isSalt ? 0.5 : NaN;
+                          const unitPriceRaw =
+                            meta?.unitPrice?.toString() ?? "";
                           const unitPriceDisplay = unitPriceRaw
                             .replace(/rm\s*/i, "")
                             .trim();
@@ -790,14 +923,16 @@ const MenuScreen = () => {
                             : NaN;
                           const booleanQuantity =
                             entry.quantity === true ? 1 : NaN;
-                          const resolvedQuantityForDisplay = !Number.isNaN(quantityValue)
-                            ? quantityValue
-                            : !Number.isNaN(booleanQuantity)
-                              ? booleanQuantity
-                              : NaN;
-                          const displayQuantity = !Number.isNaN(resolvedQuantityForDisplay)
-                            ? resolvedQuantityForDisplay
-                            : "?";
+                          const resolvedQuantityForDisplay =
+                            !Number.isNaN(quantityValue)
+                              ? quantityValue
+                              : !Number.isNaN(booleanQuantity)
+                                ? booleanQuantity
+                                : NaN;
+                          const displayQuantity =
+                            !Number.isNaN(resolvedQuantityForDisplay)
+                              ? resolvedQuantityForDisplay
+                              : "?";
                           const conversion = (() => {
                             if (!unitMismatch || !Number.isNaN(toTasteAmount)) {
                               return null;
@@ -866,7 +1001,8 @@ const MenuScreen = () => {
                               conversion.unit === meta.unit) ||
                             (!!aiConversion &&
                               !!meta?.unit &&
-                              aiConversion.unit.toLowerCase() === meta.unit.toLowerCase()) ||
+                              aiConversion.unit.toLowerCase() ===
+                                meta.unit.toLowerCase()) ||
                             (!!resolvedUnit &&
                               !!metaUnit &&
                               resolvedUnit === metaUnit) ||
@@ -899,10 +1035,15 @@ const MenuScreen = () => {
                               ? "piece"
                               : resolvedUnit && resolvedUnit === metaUnit
                                 ? resolvedUnit
-                                : aiConversion?.unit ?? conversion?.unit ?? meta?.unit ?? "";
+                                : aiConversion?.unit ??
+                                  conversion?.unit ??
+                                  meta?.unit ??
+                                  "";
                           const unitPriceLabel =
                             isMatch && meta && !Number.isNaN(unitPriceValue)
-                              ? [unitPriceDisplay, priceUnit].filter(Boolean).join(" / ")
+                              ? [unitPriceDisplay, priceUnit]
+                                  .filter(Boolean)
+                                  .join(" / ")
                               : "";
                           const totalLabel = isMatch
                             ? !Number.isNaN(totalPrice)
@@ -924,83 +1065,174 @@ const MenuScreen = () => {
                                     : "";
                           const showResolveButton =
                             isMatch && unitMismatch && !resolvedMismatch;
-                          const densityFlag = densityEstimated ? "AI density" : "";
-                          const metaText = [unitPriceLabel, conversionLabel, densityFlag, totalLabel]
+                          const densityFlag = densityEstimated
+                            ? "AI density"
+                            : "";
+                          const metaText = [
+                            showSelectedPrices ? unitPriceLabel : "",
+                            showSelectedPrices ? conversionLabel : "",
+                            showSelectedPrices ? densityFlag : "",
+                            showSelectedPrices ? totalLabel : "",
+                          ]
                             .filter((value) => {
                               if (!value) return false;
-                              const text = value.toString().trim().toLowerCase();
+                              const text = value
+                                .toString()
+                                .trim()
+                                .toLowerCase();
                               return text !== "true" && text !== "false";
                             })
                             .join(" • ");
 
-                          return (
-                            <>
+                          return {
+                            entry,
+                            entryIndex,
+                            ingredientName,
+                            normalizedName,
+                            isMatch,
+                            meta,
+                            entryKey,
+                            rawUnit,
+                            entryUnit,
+                            metaUnit,
+                            resolvedUnit,
+                            resolvedMismatch,
+                            effectiveAmount,
+                            priceUnit,
+                            unitMismatch,
+                            displayQuantity,
+                            showResolveButton,
+                            metaText,
+                          };
+                        }
+                      );
+
+                      const hasUnresolvedMismatch = computedEntries.some(
+                        (item) =>
+                          item.isMatch &&
+                          item.unitMismatch &&
+                          !item.resolvedMismatch
+                      );
+                      const enableQuantityCheck = !hasUnresolvedMismatch;
+
+                      const rows = computedEntries.map((item) => {
+                        const requiredBase =
+                          enableQuantityCheck &&
+                          item.isMatch &&
+                          !Number.isNaN(item.effectiveAmount) &&
+                          item.priceUnit
+                            ? toBaseAmount(item.effectiveAmount, item.priceUnit)
+                            : null;
+                        const stock =
+                          enableQuantityCheck && item.isMatch
+                            ? ingredientStockMap.get(item.normalizedName)
+                            : null;
+                        const isLowInCart =
+                          enableQuantityCheck &&
+                          item.isMatch &&
+                          requiredBase &&
+                          stock &&
+                          stock.unit === requiredBase.unit &&
+                          stock.amount < requiredBase.amount;
+
+                        return (
+                          <View
+                            key={`${selectedTile.id}-${item.entryIndex}`}
+                            style={styles.tileItemRow}
+                          >
+                            <Text
+                              style={[
+                                styles.tileItem,
+                                styles.tileItemLabel,
+                                !item.isMatch && styles.tileItemDim,
+                                item.isMatch && styles.tileItemMatch,
+                                item.isMatch &&
+                                  item.unitMismatch &&
+                                  !item.resolvedMismatch &&
+                                  styles.tileItemWarn,
+                                isLowInCart && styles.tileItemLow,
+                              ]}
+                            >
+                              {"- "}
+                              {item.displayQuantity}{" "}
+                              {item.rawUnit ? `${item.rawUnit} ` : ""}
+                              {item.ingredientName || "Unnamed"}
+                            </Text>
+                            {showSelectedPrices &&
+                            item.isMatch &&
+                            item.metaText ? (
                               <Text
                                 style={[
-                                  styles.tileItem,
-                                  styles.tileItemLabel,
-                                  !isMatch && styles.tileItemDim,
-                                  isMatch && styles.tileItemMatch,
-                                  isMatch && unitMismatch && !resolvedMismatch && styles.tileItemWarn,
+                                  styles.tileItemMeta,
+                                  !item.isMatch && styles.tileItemDim,
+                                  item.isMatch && styles.tileItemMatch,
+                                  item.isMatch &&
+                                    item.unitMismatch &&
+                                    !item.resolvedMismatch &&
+                                    styles.tileItemWarn,
+                                  isLowInCart && styles.tileItemLow,
                                 ]}
                               >
-                                {"- "}
-                                {displayQuantity}{" "}
-                                {rawUnit ? `${rawUnit} ` : ""}
-                                {ingredientName || "Unnamed"}
+                                {item.metaText}
                               </Text>
-                              {isMatch && metaText ? (
-                                <Text
-                                  style={[
-                                    styles.tileItemMeta,
-                                    !isMatch && styles.tileItemDim,
-                                    isMatch && styles.tileItemMatch,
-                                    isMatch && unitMismatch && !resolvedMismatch && styles.tileItemWarn,
-                                  ]}
-                                >
-                                  {metaText}
+                            ) : null}
+                            {showSelectedPrices && item.showResolveButton ? (
+                              <TouchableOpacity
+                                style={[
+                                  styles.resolveButton,
+                                  aiLoading[item.entryKey] &&
+                                    styles.resolveButtonDisabled,
+                                ]}
+                                onPress={() =>
+                                  handleResolveMismatch(
+                                    item.entry,
+                                    item.entryIndex,
+                                    item.entryKey,
+                                    item.meta?.unit ?? null
+                                  )
+                                }
+                                disabled={aiLoading[item.entryKey]}
+                              >
+                                <Text style={styles.resolveButtonText}>
+                                  {aiLoading[item.entryKey]
+                                    ? "Fixing..."
+                                    : "Fix"}
                                 </Text>
-                              ) : null}
-                              {showResolveButton ? (
-                                <TouchableOpacity
-                                  style={[
-                                    styles.resolveButton,
-                                    aiLoading[entryKey] && styles.resolveButtonDisabled,
-                                  ]}
-                                  onPress={() =>
-                                    handleResolveMismatch(
-                                      entry,
-                                      entryIndex,
-                                      entryKey,
-                                      meta?.unit ?? null
-                                    )
-                                  }
-                                  disabled={aiLoading[entryKey]}
-                                >
-                                  <Text style={styles.resolveButtonText}>
-                                    {aiLoading[entryKey] ? "Fixing..." : "Fix"}
-                                  </Text>
-                                </TouchableOpacity>
-                              ) : null}
-                            </>
-                          );
-                        })()}
-                        </View>
-                      ));
+                              </TouchableOpacity>
+                            ) : null}
+                          </View>
+                        );
+                      });
 
                       return (
                         <>
                           {rows}
-                          <View style={styles.totalRow}>
-                            <Text style={styles.totalLabel}>Total</Text>
-                            <Text style={styles.totalValue}>
-                              {totalSum > 0 ? `RM ${totalSum.toFixed(2)}` : "RM -"}
-                            </Text>
-                          </View>
+                          {showSelectedPrices ? (
+                            <View style={styles.totalRow}>
+                              <Text style={styles.totalLabel}>Total</Text>
+                              <Text style={styles.totalValue}>
+                                {totalSum > 0 ? `RM ${totalSum.toFixed(2)}` : "RM -"}
+                              </Text>
+                            </View>
+                          ) : null}
                         </>
                       );
                     })()}
                   </View>
+                  <TouchableOpacity
+                    style={styles.togglePricesButton}
+                    onPress={() => setShowSelectedPrices((prev) => !prev)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showSelectedPrices
+                        ? "Hide selected ingredient prices"
+                        : "Show selected ingredient prices"
+                    }
+                  >
+                    <Text style={styles.togglePricesText}>
+                      {showSelectedPrices ? "Hide prices" : "Show prices"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -1138,10 +1370,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
-  legendText: {
-    fontSize: 12,
-    color: colors.textLight,
+  legendRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     marginBottom: 8,
+  },
+  legendPill: {
+    fontSize: 12,
+    fontWeight: "600",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  legendGreen: {
+    backgroundColor: "#bbf7d0",
+    color: "#065f46",
+  },
+  legendYellow: {
+    backgroundColor: "#fef9c3",
+    color: "#854d0e",
+  },
+  legendRed: {
+    backgroundColor: "#fee2e2",
+    color: "#991b1b",
   },
   tileList: {
     gap: 6,
@@ -1175,6 +1428,9 @@ const styles = StyleSheet.create({
   tileItemWarn: {
     color: "#ca8a04",
   },
+  tileItemLow: {
+    color: "#b91c1c",
+  },
   totalRow: {
     marginTop: 8,
     paddingTop: 10,
@@ -1192,6 +1448,19 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 14,
     fontWeight: "700",
+    color: colors.black,
+  },
+  togglePricesButton: {
+    marginTop: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+  togglePricesText: {
+    fontSize: 13,
+    fontWeight: "600",
     color: colors.black,
   },
   resolveButton: {

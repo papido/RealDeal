@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RealDeal",
-    "slug": "RealDeal",
+    "slug": "realdeal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/iconImage.png",
@@ -49,6 +49,12 @@
       "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-7187172609991034~6581539305"
+        }
+      ],
       "expo-router",
       [
         "expo-notifications",

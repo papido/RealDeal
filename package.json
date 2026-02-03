@@ -59,6 +59,7 @@
     "react-native": "0.79.6",
     "react-native-confirmation-code-field": "^8.0.1",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-google-mobile-ads": "^14.11.0",
     "react-native-pager-view": "6.7.1",
     "react-native-qrcode-svg": "^6.3.15",
     "react-native-reanimated": "~3.17.4",
