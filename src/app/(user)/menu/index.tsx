@@ -332,9 +332,7 @@ const MenuScreen = () => {
       const normalizedName = normalizeIngredient(name);
       if (!normalizedName) return;
 
-      const quantityValue = item.quantity
-        ? parseFloat(item.quantity.toString().replace(/[^\d.]/g, ""))
-        : NaN;
+      const quantityValue = 1;
       const unitWeightValue = item.weight
         ? parseFloat(item.weight.toString().replace(/[^\d.]/g, ""))
         : NaN;

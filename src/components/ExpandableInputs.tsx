@@ -24,7 +24,6 @@ const ExpandableInputs = () => {
   const [ingredients, setIngredients] = useState<IngredientsType>({
     name: "",
     price: "",
-    quantity: "",
     weight: "",
     unit: "g",
     unitPrice: "",
@@ -33,15 +32,13 @@ const ExpandableInputs = () => {
   const calculateUnitPrice = (
     price: string | number,
     weight: string | number,
-    quantity: string | number,
     unit: string,
   ) => {
     const p = Number(price);
     const w = Number(weight);
-    const q = unit === "piece" ? 1 : Number(quantity);
 
-    if (p > 0 && w > 0 && q > 0) {
-      const divisor = unit === "piece" ? w : w * q;
+    if (p > 0 && w > 0) {
+      const divisor = w;
       return (p / divisor).toFixed(2);
     }
   };
@@ -49,7 +46,6 @@ const ExpandableInputs = () => {
   const unitPrice = calculateUnitPrice(
     ingredients.price,
     ingredients.weight,
-    ingredients.quantity,
     ingredients.unit,
   );
 
@@ -83,12 +79,6 @@ const ExpandableInputs = () => {
           setIngredients((prev) => ({
             ...prev,
             unit: selectedUnit,
-            quantity:
-              selectedUnit === "piece"
-                ? ""
-                : prev.unit === "piece"
-                  ? ""
-                  : prev.quantity,
           }));
         }
       },
@@ -100,8 +90,7 @@ const ExpandableInputs = () => {
 
     if (
       !ingredients.name.trim() ||
-      Number(ingredients.price) <= 0 ||
-      (ingredients.unit !== "piece" && Number(ingredients.quantity) <= 0)
+      Number(ingredients.price) <= 0
     ) {
       setErrors("Please fill all the required fields!");
       return;
@@ -110,12 +99,8 @@ const ExpandableInputs = () => {
     setLoading(true);
 
     const originalName = ingredients.name.trim();
-    const quantity =
-      ingredients.unit === "piece" ? 1 : Number(ingredients.quantity);
     const weight = Number(ingredients.weight);
-    const originalQuantity =
-      ingredients.unit === "piece" ? weight : quantity;
-    const totalInput = ingredients.unit === "piece" ? weight : weight * quantity;
+    const totalInput = weight;
 
     const { weight: convertedWeight, unit: convertedUnit } = convertIngredient(
       totalInput,
@@ -129,11 +114,10 @@ const ExpandableInputs = () => {
     const res = await createIngredients({
       name: originalName,
       price: Number(ingredients.price),
-      quantity: quantity,
       weight: convertedWeight,
       unit: convertedUnit,
       originalUnit: ingredients.unit,
-      originalQuantity,
+      originalQuantity: 1,
       unitPrice: convertedUnitPrice,
     } as any);
     setLoading(false);
@@ -143,7 +127,6 @@ const ExpandableInputs = () => {
       setIngredients({
         name: "",
         price: "",
-        quantity: "",
         weight: "",
         unit: "g",
         unitPrice: "",
@@ -221,20 +204,6 @@ const ExpandableInputs = () => {
               style={styles.unitPrice}
             >{`$${unitPrice} / ${ingredients.unit}`}</Text>
           )}
-          <TextInput
-            placeholder="Quantity"
-            placeholderTextColor="#999"
-            style={[
-              styles.input,
-              ingredients.unit === "piece" && styles.inputDisabled,
-            ]}
-            keyboardType="numeric"
-            editable={ingredients.unit !== "piece"}
-            value={ingredients.quantity}
-            onChangeText={(text) =>
-              setIngredients({ ...ingredients, quantity: text })
-            }
-          />
 
           {!!errors && <Text style={styles.errorText}>{errors}</Text>}
 

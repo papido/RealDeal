@@ -141,7 +141,6 @@ export type IngredientsType = {
   id?: string;
   name: string;
   price: string;
-  quantity: string;
   weight: string;
   unit: string;
   unitPrice: string;

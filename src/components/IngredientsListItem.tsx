@@ -53,10 +53,6 @@ const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
 
       <View style={styles.detailsContainer}>
         <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Qty</Text>
-          <Text style={styles.detailValue}>{ingredientsItem.quantity}</Text>
-        </View>
-        <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Unit Weight</Text>
           <Text style={styles.detailValue}>
             {formattedWeight} {displayUnit}

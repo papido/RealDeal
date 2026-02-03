@@ -35,7 +35,6 @@ export const createIngredients = async (
       ...ingredientsData,
       name: ingredientsData.name || "",
       price: ingredientsData.price || 0,
-      quantity: ingredientsData.quantity || 0,
       weight: ingredientsData.weight || 0,
       unit: ingredientsData.unit || "",
       unitPrice: ingredientsData.unitPrice || 0,
