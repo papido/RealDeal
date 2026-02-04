@@ -93,6 +93,7 @@ export type UserType = {
   image?: any;
   address?: string;
   phoneNumber: string;
+  aiCredits?: number;
 } | null;
 
 export type ResponseType = {

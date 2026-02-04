@@ -288,8 +288,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateUserData = async (uid: string): Promise<UserType | null> => {
     try {
-      const docSnap = await firestore().collection("users").doc(uid).get();
-      const data = docSnap.data();
+      const docRef = firestore().collection("users").doc(uid);
+      const docSnap = await docRef.get();
+      let data = docSnap.data() as { aiCredits?: number } | undefined;
+      if (typeof data?.aiCredits !== "number") {
+        await docRef.set({ aiCredits: 5 }, { merge: true });
+        data = { ...(data ?? {}), aiCredits: 5 };
+      }
       return {
         uid: data?.uid,
         email: data?.email || null,
@@ -297,6 +302,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         image: data?.image || null,
         address: data?.address || null,
         phoneNumber: data?.phoneNumber || null,
+        aiCredits: data?.aiCredits,
       };
     } catch (error) {
       console.error("Failed to update user data:", error);

@@ -21,6 +21,11 @@ import React, {
   useState,
 } from "react";
 import {
+  RewardedAd,
+  RewardedAdEventType,
+  TestIds,
+} from "react-native-google-mobile-ads";
+import {
   ActivityIndicator,
   Alert,
   ScrollView,
@@ -192,6 +197,12 @@ const MenuScreen = () => {
   >({});
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
   const [showSelectedPrices, setShowSelectedPrices] = useState(false);
+  const [aiCredits, setAiCredits] = useState(0);
+  const [fixAllLoading, setFixAllLoading] = useState(false);
+  const [rewardedLoaded, setRewardedLoaded] = useState(false);
+  const [rewardedLoading, setRewardedLoading] = useState(false);
+  const pendingRewardShowRef = useRef(false);
+  const rewardedAdRef = useRef<RewardedAd | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -260,6 +271,75 @@ const MenuScreen = () => {
     );
 
     return () => unsubscribe();
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      setAiCredits(0);
+      return;
+    }
+
+    const unsubscribe = firestore()
+      .collection("users")
+      .doc(uid)
+      .onSnapshot(
+        (doc) => {
+          const data = doc.data() as { aiCredits?: number } | undefined;
+          const value = typeof data?.aiCredits === "number" ? data.aiCredits : 0;
+          setAiCredits(value);
+        },
+        () => setAiCredits(0)
+      );
+
+    return () => unsubscribe();
+  }, [uid]);
+
+  useEffect(() => {
+    // TODO: Replace with production rewarded ad unit id.
+    const adUnitId = __DEV__ ? TestIds.REWARDED : "YOUR_REWARDED_AD_UNIT_ID";
+    const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+      requestNonPersonalizedAdsOnly: true,
+    });
+    rewardedAdRef.current = rewarded;
+
+    const unsubscribeLoaded = rewarded.addAdEventListener(
+      RewardedAdEventType.LOADED,
+      () => {
+        setRewardedLoaded(true);
+        setRewardedLoading(false);
+        if (pendingRewardShowRef.current) {
+          pendingRewardShowRef.current = false;
+          rewarded.show();
+        }
+      }
+    );
+
+    const unsubscribeEarned = rewarded.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      async () => {
+        if (!uid) return;
+        try {
+          await firestore().runTransaction(async (transaction) => {
+            const userRef = firestore().collection("users").doc(uid);
+            const userSnap = await transaction.get(userRef);
+            const currentCredits =
+              typeof userSnap.data()?.aiCredits === "number"
+                ? userSnap.data()?.aiCredits
+                : 0;
+            transaction.update(userRef, { aiCredits: currentCredits + 5 });
+          });
+          Alert.alert("Credits added", "You received 5 AI credits.");
+        } catch (error) {
+          Alert.alert("Failed to add credits", "Please try again later.");
+        }
+      }
+    );
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
+      rewardedAdRef.current = null;
+    };
   }, [uid]);
 
   const filteredTiles = useMemo(() => savedTiles, [savedTiles]);
@@ -454,6 +534,143 @@ const MenuScreen = () => {
     }
     return null;
   }, []);
+
+  const handleTogglePrices = useCallback(() => {
+    setShowSelectedPrices((prev) => !prev);
+  }, []);
+
+  const handleWatchAd = useCallback(() => {
+    const rewarded = rewardedAdRef.current;
+    if (!rewarded) return;
+
+    if (rewardedLoading) return;
+
+    if (rewardedLoaded) {
+      setRewardedLoaded(false);
+      rewarded.show();
+      return;
+    }
+
+    pendingRewardShowRef.current = true;
+    setRewardedLoading(true);
+    rewarded.load();
+  }, [rewardedLoaded, rewardedLoading]);
+
+  const getFixAllCost = useCallback((lineCount: number) => {
+    if (lineCount <= 10) return 3;
+    if (lineCount <= 20) return 4;
+    if (lineCount <= 40) return 6;
+    return 7;
+  }, []);
+
+  const handleFixAll = useCallback(async () => {
+    if (!uid || !selectedTile || fixAllLoading) return;
+
+    const cost = getFixAllCost(selectedTile.items.length);
+    if (aiCredits < cost) {
+      Alert.alert(
+        "Not enough AI credits",
+        `You need ${cost} credits to fix all, but you only have ${aiCredits}.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Watch ad", onPress: handleWatchAd },
+        ]
+      );
+      return;
+    }
+
+    setFixAllLoading(true);
+    try {
+      await firestore().runTransaction(async (transaction) => {
+        const userRef = firestore().collection("users").doc(uid);
+        const userSnap = await transaction.get(userRef);
+        const currentCredits =
+          typeof userSnap.data()?.aiCredits === "number"
+            ? userSnap.data()?.aiCredits
+            : 0;
+        if (currentCredits < cost) {
+          throw new Error("INSUFFICIENT_CREDITS");
+        }
+        transaction.update(userRef, { aiCredits: currentCredits - cost });
+      });
+
+      const entriesToFix = selectedTile.items
+        .map((entry, entryIndex) => {
+          const ingredientName =
+            typeof entry.ingredient === "string" ? entry.ingredient : "";
+          const normalizedName = normalizeIngredient(ingredientName);
+          const isMatch = isMatchedIngredient(normalizedName);
+          const meta = findIngredientMeta(normalizedName);
+          const entryKey = `${selectedTile.id}-${entryIndex}`;
+          const aiConversion = aiConversions[entryKey];
+          const rawUnit = typeof entry.unit === "string" ? entry.unit : "";
+          const entryUnit = rawUnit.toLowerCase().trim();
+          const metaUnit = meta?.unit?.toLowerCase().trim() ?? "";
+          const resolvedUnit = entry.resolvedUnit?.toLowerCase().trim() ?? "";
+          const unitMismatch = !!entryUnit && !!metaUnit && entryUnit !== metaUnit;
+          const isToTaste = /\bto taste\b/i.test(entryUnit);
+          const isSalt = normalizedName.includes("salt");
+          const toTasteAmount = isToTaste && isSalt ? 0.5 : NaN;
+          const autoPieceResolved = metaUnit === "piece";
+          const resolvedMismatch =
+            !Number.isNaN(toTasteAmount) ||
+            (!!aiConversion &&
+              !!metaUnit &&
+              aiConversion.unit.toLowerCase() === metaUnit) ||
+            (!!resolvedUnit && !!metaUnit && resolvedUnit === metaUnit) ||
+            autoPieceResolved;
+
+          return {
+            entry,
+            entryIndex,
+            entryKey,
+            isMatch,
+            unitMismatch,
+            resolvedMismatch,
+            metaUnit,
+          };
+        })
+        .filter(
+          (item) =>
+            item.isMatch &&
+            item.unitMismatch &&
+            !item.resolvedMismatch &&
+            !!item.metaUnit
+        );
+
+      for (const item of entriesToFix) {
+        await handleResolveMismatch(
+          item.entry,
+          item.entryIndex,
+          item.entryKey,
+          item.metaUnit
+        );
+      }
+    } catch (error: any) {
+      if (error?.message === "INSUFFICIENT_CREDITS") {
+        Alert.alert(
+          "Not enough AI credits",
+          `You need ${cost} credits to fix all.`
+        );
+      } else {
+        Alert.alert("Fix all failed", "Please try again in a moment.");
+      }
+    } finally {
+      setFixAllLoading(false);
+    }
+  }, [
+    uid,
+    selectedTile,
+    fixAllLoading,
+    getFixAllCost,
+    aiCredits,
+    normalizeIngredient,
+    isMatchedIngredient,
+    findIngredientMeta,
+    aiConversions,
+    handleResolveMismatch,
+    handleWatchAd,
+  ]);
 
   const handleDeleteSelected = useCallback(() => {
     if (!uid || !selectedTileId) return;
@@ -838,21 +1055,34 @@ const MenuScreen = () => {
                     <Text style={styles.tileTitle}>
                       Selected Ingredients ({selectedTile.items.length})
                     </Text>
-                    <TouchableOpacity
-                      style={styles.togglePricesButton}
-                      onPress={() => setShowSelectedPrices((prev) => !prev)}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        showSelectedPrices
-                          ? "Hide selected ingredient prices"
-                          : "Show selected ingredient prices"
-                      }
-                    >
-                      <Text style={styles.togglePricesText}>
-                        {showSelectedPrices ? "Hide prices" : "Show prices"}
-                      </Text>
-                    </TouchableOpacity>
                     <View style={styles.tileActions}>
+                      <TouchableOpacity
+                        onPress={handleFixAll}
+                        style={styles.fixAllButton}
+                        accessibilityLabel="Fix all ingredients"
+                        accessibilityRole="button"
+                        disabled={fixAllLoading}
+                      >
+                        <Text style={styles.fixAllText}>
+                          {fixAllLoading ? "Fixing..." : "Fix all"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={handleTogglePrices}
+                        style={styles.iconButton}
+                        accessibilityLabel={
+                          showSelectedPrices
+                            ? "Hide selected ingredient prices"
+                            : "Show selected ingredient prices"
+                        }
+                        accessibilityRole="button"
+                      >
+                        <Ionicons
+                          name={showSelectedPrices ? "eye-off-outline" : "eye-outline"}
+                          size={18}
+                          color={colors.textLight}
+                        />
+                      </TouchableOpacity>
                       <TouchableOpacity
                         onPress={handleEditSelected}
                         style={styles.editButton}
@@ -1212,11 +1442,11 @@ const MenuScreen = () => {
                                 }
                                 disabled={aiLoading[item.entryKey]}
                               >
-                                <Text style={styles.resolveButtonText}>
-                                  {aiLoading[item.entryKey]
-                                    ? "Fixing..."
-                                    : "Fix"}
-                                </Text>
+                                <Ionicons
+                                  name="close-circle"
+                                  size={18}
+                                  color="#b91c1c"
+                                />
                               </TouchableOpacity>
                             ) : null}
                           </View>
@@ -1406,7 +1636,7 @@ const styles = StyleSheet.create({
   },
   tileItemRow: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
   },
@@ -1468,18 +1698,28 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.black,
   },
-  resolveButton: {
+  iconButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  fixAllButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     backgroundColor: "#0b7a2a",
+    marginRight: 4,
   },
-  resolveButtonDisabled: {
-    opacity: 0.6,
-  },
-  resolveButtonText: {
+  fixAllText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "700",
+  },
+  resolveButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  resolveButtonDisabled: {
+    opacity: 0.6,
   },
 });
