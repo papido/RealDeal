@@ -2,14 +2,14 @@
 import Button from "@/src/components/Button";
 import { ParsedIngredient } from "@/src/constants/types";
 import { parseENLine } from "@/src/utils/enParser";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import React, { JSX, useEffect, useMemo, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
 import {
   Alert,
-  Button as RNButton,
   FlatList,
   Pressable,
+  Button as RNButton,
   StyleSheet,
   Text,
   TextInput,
@@ -58,7 +58,7 @@ export default function IngredientParser(): JSX.Element {
         .split("\n")
         .map((l) => l.trim())
         .filter(Boolean),
-    [rawText]
+    [rawText],
   );
 
   const handleParse = (): void => {
@@ -71,7 +71,7 @@ export default function IngredientParser(): JSX.Element {
   const editIngredient = (
     index: number,
     field: EditableField,
-    value: string
+    value: string,
   ): void => {
     setParsedIngredients((prev) => {
       const updated = [...prev];
@@ -101,7 +101,7 @@ export default function IngredientParser(): JSX.Element {
         style: "destructive",
         onPress: () => {
           setParsedIngredients((prev) =>
-            prev.filter((_, itemIndex) => itemIndex !== index)
+            prev.filter((_, itemIndex) => itemIndex !== index),
           );
           if (editingIndex === index) {
             setEditingIndex(null);
@@ -124,11 +124,23 @@ export default function IngredientParser(): JSX.Element {
 
   const handleSave = async (): Promise<void> => {
     const cleanIngredients = parsedIngredients
-      .map(({ quantity, unit, ingredient }) => ({
-        quantity: quantity ?? null,
-        unit: unit ?? null,
-        ingredient: ingredient?.trim() || null,
-      }))
+      .map(
+        ({
+          quantity,
+          unit,
+          ingredient,
+          resolvedQuantity,
+          resolvedUnit,
+          resolvedDensityEstimated,
+        }) => ({
+          quantity: quantity ?? null,
+          unit: unit ?? null,
+          ingredient: ingredient?.trim() || null,
+          resolvedQuantity: resolvedQuantity ?? null,
+          resolvedUnit: resolvedUnit ?? null,
+          resolvedDensityEstimated: resolvedDensityEstimated ?? null,
+        }),
+      )
       .filter((item) => item.ingredient);
 
     if (!cleanIngredients.length || saving) return;
@@ -154,7 +166,7 @@ export default function IngredientParser(): JSX.Element {
             ? { updatedAt: firestore.FieldValue.serverTimestamp() }
             : { createdAt: firestore.FieldValue.serverTimestamp() }),
         },
-        { merge: true }
+        { merge: true },
       );
       Alert.alert("Saved", "Ingredients saved successfully.");
     } catch (error) {
@@ -198,7 +210,7 @@ export default function IngredientParser(): JSX.Element {
           parsedIngredients.length ? (
             <View style={styles.listHeader}>
               <Text style={[styles.headerText, styles.cellSmall]}>Qty</Text>
-              <Text style={[styles.headerText, styles.cellSmall]}>Unit</Text>
+              <Text style={[styles.headerText, styles.cellUnit]}>Unit</Text>
               <Text style={[styles.headerText, styles.cellGrow]}>
                 Ingredient
               </Text>
@@ -226,11 +238,9 @@ export default function IngredientParser(): JSX.Element {
                     keyboardType="numeric"
                   />
                   <TextInput
-                    style={[styles.inlineInput, styles.cellSmall]}
+                    style={[styles.inlineInput, styles.cellUnit]}
                     value={item.unit ?? ""}
-                    onChangeText={(text) =>
-                      editIngredient(index, "unit", text)
-                    }
+                    onChangeText={(text) => editIngredient(index, "unit", text)}
                     placeholder="Unit"
                   />
                   <TextInput
@@ -245,7 +255,7 @@ export default function IngredientParser(): JSX.Element {
               ) : (
                 <>
                   <Text style={styles.cellSmall}>{item.quantity ?? "?"}</Text>
-                  <Text style={styles.cellSmall}>{item.unit ?? "?"}</Text>
+                  <Text style={styles.cellUnit}>{item.unit ?? "?"}</Text>
 
                   {isEditing ? (
                     <TextInput
@@ -258,7 +268,9 @@ export default function IngredientParser(): JSX.Element {
                       returnKeyType="done"
                     />
                   ) : (
-                    <Text style={styles.cellGrow}>{item.ingredient ?? "?"}</Text>
+                    <Text style={styles.cellGrow}>
+                      {item.ingredient ?? "?"}
+                    </Text>
                   )}
 
                   {isEditing ? (
@@ -396,7 +408,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cellSmall: {
-    width: 70,
+    width: 40,
+    paddingRight: 5,
+  },
+  cellUnit: {
+    width: 90,
+    marginLeft: -4,
+    paddingRight: 12,
   },
   cellGrow: {
     flex: 1,

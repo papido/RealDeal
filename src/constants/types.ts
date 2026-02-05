@@ -154,6 +154,9 @@ export type ParsedIngredient = {
   quantity?: number | string | null;
   unit?: string | null;
   ingredient?: string | null;
+  resolvedQuantity?: number | null;
+  resolvedUnit?: string | null;
+  resolvedDensityEstimated?: boolean | null;
 };
 
 export interface Ingredient {
