@@ -37,6 +37,8 @@ export default function IngredientParser(): JSX.Element {
   // inline edit state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draftIngredient, setDraftIngredient] = useState<string>("");
+  const [draftQuantity, setDraftQuantity] = useState<string>("");
+  const [draftUnit, setDraftUnit] = useState<string>("");
 
   useEffect(() => {
     if (!items) return;
@@ -66,6 +68,7 @@ export default function IngredientParser(): JSX.Element {
     setParsedIngredients(parsed);
     setEditingIndex(null);
     setDraftIngredient("");
+    setEditAllMode(true);
   };
 
   const editIngredient = (
@@ -84,32 +87,31 @@ export default function IngredientParser(): JSX.Element {
   const startEdit = (index: number): void => {
     setEditingIndex(index);
     setDraftIngredient(parsedIngredients[index]?.ingredient ?? "");
+    setDraftQuantity((parsedIngredients[index]?.quantity ?? "").toString());
+    setDraftUnit(parsedIngredients[index]?.unit ?? "");
   };
 
   const doneEdit = (): void => {
     if (editingIndex === null) return;
+    editIngredient(editingIndex, "quantity", draftQuantity);
+    editIngredient(editingIndex, "unit", draftUnit);
     editIngredient(editingIndex, "ingredient", draftIngredient);
     setEditingIndex(null);
     setDraftIngredient("");
+    setDraftQuantity("");
+    setDraftUnit("");
   };
 
   const handleDeleteIngredient = (index: number): void => {
-    Alert.alert("Delete ingredient", "Remove this ingredient?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          setParsedIngredients((prev) =>
-            prev.filter((_, itemIndex) => itemIndex !== index),
-          );
-          if (editingIndex === index) {
-            setEditingIndex(null);
-            setDraftIngredient("");
-          }
-        },
-      },
-    ]);
+    setParsedIngredients((prev) =>
+      prev.filter((_, itemIndex) => itemIndex !== index),
+    );
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setDraftIngredient("");
+      setDraftQuantity("");
+      setDraftUnit("");
+    }
   };
 
   const handleAddIngredient = (): void => {
@@ -120,6 +122,8 @@ export default function IngredientParser(): JSX.Element {
     setEditAllMode(true);
     setEditingIndex(null);
     setDraftIngredient("");
+    setDraftQuantity("");
+    setDraftUnit("");
   };
 
   const handleSave = async (): Promise<void> => {
@@ -197,6 +201,8 @@ export default function IngredientParser(): JSX.Element {
               setParsedIngredients([]);
               setEditingIndex(null);
               setDraftIngredient("");
+              setDraftQuantity("");
+              setDraftUnit("");
             }}
           />
         </View>
@@ -209,9 +215,23 @@ export default function IngredientParser(): JSX.Element {
         ListHeaderComponent={
           parsedIngredients.length ? (
             <View style={styles.listHeader}>
-              <Text style={[styles.headerText, styles.cellSmall]}>Qty</Text>
-              <Text style={[styles.headerText, styles.cellUnit]}>Unit</Text>
-              <Text style={[styles.headerText, styles.cellGrow]}>
+              <Text
+                style={[styles.headerText, styles.cellSmall, styles.headerPad]}
+              >
+                Qty
+              </Text>
+              <Text
+                style={[
+                  styles.headerText,
+                  styles.cellUnit,
+                  styles.headerPadUnit,
+                ]}
+              >
+                Unit
+              </Text>
+              <Text
+                style={[styles.headerText, styles.cellGrow, styles.headerPad]}
+              >
                 Ingredient
               </Text>
               <Text style={styles.headerText}>Actions</Text>
@@ -229,7 +249,11 @@ export default function IngredientParser(): JSX.Element {
               {editAllMode ? (
                 <>
                   <TextInput
-                    style={[styles.inlineInput, styles.cellSmall]}
+                    style={[
+                      styles.cellSmall,
+                      styles.inlineInput,
+                      styles.inlineInputSmall,
+                    ]}
                     value={(item.quantity ?? "").toString()}
                     onChangeText={(text) =>
                       editIngredient(index, "quantity", text)
@@ -238,32 +262,83 @@ export default function IngredientParser(): JSX.Element {
                     keyboardType="numeric"
                   />
                   <TextInput
-                    style={[styles.inlineInput, styles.cellUnit]}
+                    style={[
+                      styles.inlineInput,
+                      styles.inlineInputUnit,
+                      styles.cellUnit,
+                    ]}
                     value={item.unit ?? ""}
                     onChangeText={(text) => editIngredient(index, "unit", text)}
                     placeholder="Unit"
                   />
                   <TextInput
-                    style={[styles.inlineInput, styles.cellGrow]}
+                    style={[
+                      styles.inlineInput,
+                      styles.inlineInputIngredient,
+                      styles.cellGrow,
+                    ]}
                     value={item.ingredient ?? ""}
                     onChangeText={(text) =>
                       editIngredient(index, "ingredient", text)
                     }
                     placeholder="Ingredient"
                   />
+                  <View style={styles.actionCell}>
+                    <Pressable
+                      onPress={() => handleDeleteIngredient(index)}
+                      style={styles.iconButton}
+                      accessibilityLabel="Delete ingredient"
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#b91c1c"
+                      />
+                    </Pressable>
+                  </View>
                 </>
               ) : (
                 <>
-                  <Text style={styles.cellSmall}>{item.quantity ?? "?"}</Text>
-                  <Text style={styles.cellUnit}>{item.unit ?? "?"}</Text>
+                  {isEditing ? (
+                    <TextInput
+                      style={[
+                        styles.cellSmall,
+                        styles.inlineInput,
+                        styles.inlineInputSmall,
+                      ]}
+                      value={draftQuantity}
+                      onChangeText={setDraftQuantity}
+                      placeholder="Qty"
+                      keyboardType="numeric"
+                      autoFocus
+                      returnKeyType="next"
+                    />
+                  ) : (
+                    <Text style={styles.cellSmall}>{item.quantity ?? "?"}</Text>
+                  )}
 
                   {isEditing ? (
                     <TextInput
-                      style={styles.inlineInput}
+                      style={[
+                        styles.inlineInput,
+                        styles.inlineInputUnit,
+                        styles.cellUnit,
+                      ]}
+                      value={draftUnit}
+                      onChangeText={setDraftUnit}
+                      placeholder="Unit"
+                      returnKeyType="next"
+                    />
+                  ) : (
+                    <Text style={styles.cellUnit}>{item.unit ?? "?"}</Text>
+                  )}
+
+                  {isEditing ? (
+                    <TextInput
+                      style={[styles.inlineInput, styles.inlineInputIngredient]}
                       value={draftIngredient}
                       onChangeText={setDraftIngredient}
                       placeholder="Ingredient"
-                      autoFocus
                       onSubmitEditing={doneEdit}
                       returnKeyType="done"
                     />
@@ -332,6 +407,7 @@ export default function IngredientParser(): JSX.Element {
 
       {editAllMode ? (
         <Button
+          style={styles.saveButton}
           onPress={async () => {
             await handleSave();
             setEditAllMode(false);
@@ -345,6 +421,7 @@ export default function IngredientParser(): JSX.Element {
         </Button>
       ) : (
         <Button
+          style={styles.saveButton}
           onPress={handleSave}
           loading={saving}
           disabled={saving || parsedIngredients.length === 0}
@@ -375,7 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fafafa",
   },
   actionsRow: {
-    marginBottom: 12,
+    marginBottom: 2,
   },
   actionsLeft: {
     flexDirection: "row",
@@ -394,7 +471,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   headerText: {
     fontSize: 12,
@@ -402,14 +479,20 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
+  headerPad: {
+    marginLeft: 6,
+  },
+  headerPadUnit: {
+    marginLeft: 10,
+  },
   listRow: {
     flexDirection: "row",
     marginBottom: 8,
     alignItems: "center",
   },
   cellSmall: {
-    width: 40,
-    paddingRight: 5,
+    width: 28,
+    paddingRight: 2,
   },
   cellUnit: {
     width: 90,
@@ -429,12 +512,32 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#fff",
   },
+  inlineInputSmall: {
+    flex: 0,
+    width: 40,
+    paddingHorizontal: 6,
+    marginLeft: 0,
+    marginRight: 8,
+  },
+  inlineInputUnit: {
+    flex: 0,
+    width: 110,
+    paddingHorizontal: 6,
+    // marginLeft: 4,
+  },
+  inlineInputIngredient: {
+    marginLeft: 4,
+  },
   linkButton: {
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
   actionButtons: {
     flexDirection: "row",
+    alignItems: "center",
+  },
+  actionCell: {
+    width: 28,
     alignItems: "center",
   },
   linkButtonText: {
@@ -451,8 +554,13 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
+  },
+  saveButton: {
+    height: 48,
+    marginVertical: 4,
+    marginBottom: 0,
   },
   emptyText: {
     color: "#666",

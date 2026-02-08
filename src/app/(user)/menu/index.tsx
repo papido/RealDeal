@@ -553,81 +553,6 @@ const MenuScreen = () => {
     [ingredientMetaMap],
   );
 
-  const getEntriesToFix = useCallback(() => {
-    if (!selectedTile) return [];
-    return selectedTile.items
-      .map((entry, entryIndex) => {
-        const ingredientName =
-          typeof entry.ingredient === "string" ? entry.ingredient : "";
-        const normalizedName = normalizeIngredient(ingredientName);
-        const isMatch = isMatchedIngredient(normalizedName);
-        const meta = findIngredientMeta(normalizedName);
-        const entryKey = `${selectedTile.id}-${entryIndex}`;
-        const aiConversion = aiConversions[entryKey];
-        const rawUnit = typeof entry.unit === "string" ? entry.unit : "";
-        const entryUnit = rawUnit.toLowerCase().trim();
-        const metaUnit = normalizeUnitKey(meta?.unit ?? "");
-        const resolvedUnit = normalizeUnitKey(entry.resolvedUnit ?? "");
-        const isToTaste = /\bto taste\b/i.test(entryUnit);
-        const isSalt = normalizedName.includes("salt");
-        const toTasteAmount = isToTaste && isSalt ? 0.5 : NaN;
-        const autoPieceResolved = metaUnit === "piece";
-        const resolvedMismatch =
-          !Number.isNaN(toTasteAmount) ||
-          (!!aiConversion &&
-            !!metaUnit &&
-            normalizeUnitKey(aiConversion.unit) === metaUnit) ||
-          (!!resolvedUnit && !!metaUnit && resolvedUnit === metaUnit) ||
-          autoPieceResolved;
-        const unitMismatch =
-          !!entryUnit && !!metaUnit && normalizeUnitKey(entryUnit) !== metaUnit;
-
-        return {
-          entry,
-          entryIndex,
-          entryKey,
-          normalizedName,
-          isMatch,
-          unitMismatch,
-          resolvedMismatch,
-          metaUnit,
-        };
-      })
-      .filter(
-        (item) =>
-          item.isMatch &&
-          item.unitMismatch &&
-          !item.resolvedMismatch &&
-          !!item.metaUnit,
-      );
-  }, [
-    selectedTile,
-    normalizeIngredient,
-    isMatchedIngredient,
-    findIngredientMeta,
-    aiConversions,
-  ]);
-
-  const fixAllCount = useMemo(() => {
-    const entries = getEntriesToFix();
-    const unique = new Set(
-      entries.map((item) => item.normalizedName).filter(Boolean),
-    );
-    return unique.size;
-  }, [getEntriesToFix]);
-
-  useEffect(() => {
-    if (!selectedTile) return;
-    const entries = getEntriesToFix();
-    const names = entries.map((item) => ({
-      ingredient: item.entry.ingredient ?? "",
-      entryUnit: item.entry.unit ?? "",
-      metaUnit: item.metaUnit ?? "",
-      resolvedUnit: item.entry.resolvedUnit ?? "",
-    }));
-    console.log("Fix all pending entries:", names);
-  }, [selectedTile, getEntriesToFix]);
-
   const toVolumeUnit = useCallback((unit: string): VolumeUnit | null => {
     const normalized = unit.toLowerCase().replace(/[^a-z.]/g, "");
     if (
@@ -665,6 +590,143 @@ const MenuScreen = () => {
     }
     return null;
   }, []);
+
+  const getEntriesToFix = useCallback(() => {
+    if (!selectedTile) return [];
+    return selectedTile.items
+      .map((entry, entryIndex) => {
+        const ingredientName =
+          typeof entry.ingredient === "string" ? entry.ingredient : "";
+        const normalizedName = normalizeIngredient(ingredientName);
+        const isMatch = isMatchedIngredient(normalizedName);
+        const meta = findIngredientMeta(normalizedName);
+        const entryKey = `${selectedTile.id}-${entryIndex}`;
+        const aiConversion = aiConversions[entryKey];
+        const rawUnit = typeof entry.unit === "string" ? entry.unit : "";
+        const entryUnit = rawUnit.toLowerCase().trim();
+        const metaUnit = normalizeUnitKey(meta?.unit ?? "");
+        const resolvedUnit = normalizeUnitKey(entry.resolvedUnit ?? "");
+        const isToTaste = /\bto taste\b/i.test(entryUnit);
+        const isSalt = normalizedName.includes("salt");
+        const toTasteAmount = isToTaste && isSalt ? 0.5 : NaN;
+        const autoPieceResolved = metaUnit === "piece";
+        const unitMismatch =
+          !!entryUnit && !!metaUnit && normalizeUnitKey(entryUnit) !== metaUnit;
+        const quantityValue = entry.quantity
+          ? parseFloat(entry.quantity.toString().replace(/[^\d.]/g, ""))
+          : NaN;
+        const conversion = (() => {
+          if (!unitMismatch || !Number.isNaN(toTasteAmount)) {
+            return null;
+          }
+          if (!entry.unit || Number.isNaN(quantityValue)) {
+            return null;
+          }
+          const volumeUnit = toVolumeUnit(entry.unit);
+          const weightFactor = getWeightToGrams(entry.unit);
+          if (!volumeUnit && !weightFactor) return null;
+
+          const ingredientKey = findIngredientKeyByName(ingredientName);
+          if (ingredientKey) {
+            const viaCatalog = convertIngredient(
+              ingredientKey,
+              quantityValue,
+              volumeUnit,
+            );
+            if (viaCatalog) return viaCatalog;
+          }
+
+          if (meta?.unit && (meta.unit === "g" || meta.unit === "ml")) {
+            if (meta.unit === "g" && weightFactor) {
+              const gramsValue = quantityValue * weightFactor;
+              return {
+                value: gramsValue,
+                unit: "g",
+                display: `${gramsValue} g`,
+              };
+            }
+            if (volumeUnit) {
+              const mlAmount = quantityValue * VOLUME_UNITS[volumeUnit];
+              const densityValue =
+                typeof meta?.density === "number"
+                  ? meta.density
+                  : getFallbackDensity(ingredientName);
+              if (meta.unit === "ml") {
+                return {
+                  value: mlAmount,
+                  unit: "ml",
+                  display: `${mlAmount} ml`,
+                };
+              }
+              if (densityValue !== null) {
+                const converted = mlAmount * densityValue;
+                return {
+                  value: converted,
+                  unit: "g",
+                  display: `${converted} g`,
+                };
+              }
+            }
+          }
+
+          return null;
+        })();
+        const resolvedMismatch =
+          !Number.isNaN(toTasteAmount) ||
+          (!!conversion && !!meta?.unit && conversion.unit === meta.unit) ||
+          (!!aiConversion &&
+            !!metaUnit &&
+            normalizeUnitKey(aiConversion.unit) === metaUnit) ||
+          (!!resolvedUnit && !!metaUnit && resolvedUnit === metaUnit) ||
+          autoPieceResolved;
+
+        return {
+          entry,
+          entryIndex,
+          entryKey,
+          normalizedName,
+          isMatch,
+          unitMismatch,
+          resolvedMismatch,
+          metaUnit,
+        };
+      })
+      .filter(
+        (item) =>
+          item.isMatch &&
+          item.unitMismatch &&
+          !item.resolvedMismatch &&
+          !!item.metaUnit,
+      );
+  }, [
+    selectedTile,
+    normalizeIngredient,
+    isMatchedIngredient,
+    findIngredientMeta,
+    aiConversions,
+    toVolumeUnit,
+  ]);
+
+  const fixAllCount = useMemo(() => {
+    const entries = getEntriesToFix().filter(
+      (item) => item.unitMismatch && !item.resolvedMismatch,
+    );
+    const unique = new Set(
+      entries.map((item) => item.normalizedName).filter(Boolean),
+    );
+    return unique.size;
+  }, [getEntriesToFix]);
+
+  useEffect(() => {
+    if (!selectedTile) return;
+    const entries = getEntriesToFix();
+    const names = entries.map((item) => ({
+      ingredient: item.entry.ingredient ?? "",
+      entryUnit: item.entry.unit ?? "",
+      metaUnit: item.metaUnit ?? "",
+      resolvedUnit: item.entry.resolvedUnit ?? "",
+    }));
+  }, [selectedTile, getEntriesToFix]);
 
   const handleTogglePrices = useCallback(() => {
     setShowSelectedPrices((prev) => !prev);
@@ -1322,6 +1384,9 @@ const MenuScreen = () => {
                     <Text style={[styles.legendPill, styles.legendGreen]}>
                       Green = in cart
                     </Text>
+                    <Text style={[styles.legendPill, styles.legendGray]}>
+                      Gray = not in cart
+                    </Text>
                     <Text style={[styles.legendPill, styles.legendYellow]}>
                       Yellow = unit mismatch
                     </Text>
@@ -1856,6 +1921,10 @@ const styles = StyleSheet.create({
   legendYellow: {
     backgroundColor: "#fef9c3",
     color: "#854d0e",
+  },
+  legendGray: {
+    backgroundColor: "#e5e7eb",
+    color: "#4b5563",
   },
   legendRed: {
     backgroundColor: "#fee2e2",
