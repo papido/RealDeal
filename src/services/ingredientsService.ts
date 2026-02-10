@@ -71,3 +71,19 @@ export const deleteIngredient = async (id: string) => {
     console.error("Error deleting ingredient:", error);
   }
 };
+
+export const deleteAllIngredients = async () => {
+  try {
+    const snapshot = await ingredientsCollection.get();
+    if (snapshot.empty) return;
+
+    const batch = firestore().batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+  } catch (error) {
+    console.error("Error deleting all ingredients:", error);
+    throw error;
+  }
+};

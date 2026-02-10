@@ -1,8 +1,12 @@
 import { createIngredients } from "@/src/services/ingredientsService";
-import { convertIngredient, Unit } from "@/src/utils/invUnitConverter";
+import {
+  convertIngredient,
+  convertWeightFromBase,
+  Unit,
+} from "@/src/utils/invUnitConverter";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   StyleSheet,
@@ -14,7 +18,15 @@ import {
 import { IngredientsType } from "../constants/types";
 import Button from "./Button";
 
-const ExpandableInputs = () => {
+type ExpandableInputsProps = {
+  editingIngredient?: IngredientsType | null;
+  onEditingIngredientHandled?: () => void;
+};
+
+const ExpandableInputs = ({
+  editingIngredient,
+  onEditingIngredientHandled,
+}: ExpandableInputsProps) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState("");
   const { showActionSheetWithOptions } = useActionSheet();
@@ -28,6 +40,35 @@ const ExpandableInputs = () => {
     unit: "g",
     unitPrice: "",
   });
+
+  useEffect(() => {
+    if (!editingIngredient) return;
+
+    const item = editingIngredient as any;
+    const preferredUnit = item.originalUnit || editingIngredient.unit || "g";
+    const displayWeight =
+      item.originalUnit && Number(editingIngredient.weight) > 0
+        ? convertWeightFromBase(
+            Number(editingIngredient.weight),
+            item.originalUnit as Unit,
+          )
+        : Number(editingIngredient.weight || 0);
+
+    setErrors("");
+    setIngredients({
+      id: editingIngredient.id,
+      name: editingIngredient.name ?? "",
+      price: String(editingIngredient.price ?? ""),
+      weight: String(displayWeight || ""),
+      unit: preferredUnit,
+      unitPrice: String(editingIngredient.unitPrice ?? ""),
+      originalUnit: preferredUnit,
+      originalQuantity: item.originalQuantity ?? 1,
+      createdAt: editingIngredient.createdAt,
+    });
+    sheetRef.current?.present();
+    onEditingIngredientHandled?.();
+  }, [editingIngredient, onEditingIngredientHandled]);
 
   const calculateUnitPrice = (
     price: string | number,
@@ -112,6 +153,7 @@ const ExpandableInputs = () => {
         : "0";
 
     const res = await createIngredients({
+      id: ingredients.id,
       name: originalName,
       price: Number(ingredients.price),
       weight: convertedWeight,
@@ -119,11 +161,17 @@ const ExpandableInputs = () => {
       originalUnit: ingredients.unit,
       originalQuantity: 1,
       unitPrice: convertedUnitPrice,
+      createdAt: ingredients.createdAt,
     } as any);
     setLoading(false);
 
     if (res?.success) {
-      Alert.alert("Success", "Ingredient created successfully!");
+      Alert.alert(
+        "Success",
+        ingredients.id
+          ? "Ingredient updated successfully!"
+          : "Ingredient created successfully!",
+      );
       setIngredients({
         name: "",
         price: "",
@@ -213,7 +261,9 @@ const ExpandableInputs = () => {
             disabled={loading}
             style={styles.updateButton}
           >
-            <Text style={styles.checkoutButtonText}>Add Ingredient</Text>
+            <Text style={styles.checkoutButtonText}>
+              {ingredients.id ? "Update Ingredient" : "Add Ingredient"}
+            </Text>
           </Button>
 
           <TouchableOpacity

@@ -2,6 +2,7 @@
 import { IngredientsType } from "@/src/constants/types";
 import {
   createIngredients,
+  deleteAllIngredients,
   deleteIngredient,
   getAllIngredients,
 } from "@/src/services/ingredientsService";
@@ -11,6 +12,7 @@ type IngredientsContextType = {
   ingredients: IngredientsType[];
   addIngredient: (ingredient: IngredientsType) => Promise<void>;
   removeIngredient: (id: string) => Promise<void>;
+  clearIngredients: () => Promise<void>;
   loading: boolean;
 };
 
@@ -46,12 +48,22 @@ export const IngredientsProvider = ({
     setLoading(false);
   };
 
+  const clearIngredients = async () => {
+    setLoading(true);
+    try {
+      await deleteAllIngredients();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <IngredientsContext.Provider
       value={{
         ingredients,
         addIngredient,
         removeIngredient,
+        clearIngredients,
         loading,
       }}
     >

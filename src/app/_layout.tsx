@@ -8,10 +8,11 @@ import * as Notifications from "expo-notifications";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
+import { Alert, Text, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import mobileAds from "react-native-google-mobile-ads";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
-import { IngredientsProvider } from "../contexts/IngredientsProvider";
+import { IngredientsProvider, useIngredients } from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
 
 Notifications.setNotificationHandler({
@@ -29,7 +30,28 @@ SplashScreen.preventAutoHideAsync();
 // Create a separate component that uses useAuth
 const AppLayout = () => {
   const { user } = useAuth(); // Now this is within AuthProvider
+  const { ingredients, clearIngredients, loading } = useIngredients();
   const isLoggedIn = !!user;
+  const canDeleteAll = ingredients.length > 0 && !loading;
+
+  const handleDeleteAllIngredients = () => {
+    if (!canDeleteAll) return;
+    Alert.alert(
+      "Delete all ingredients?",
+      "This will remove every ingredient from your cart.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete All",
+          style: "destructive",
+          onPress: async () => {
+            await clearIngredients();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <>
       <StatusBar style="dark" />
@@ -44,8 +66,19 @@ const AppLayout = () => {
         <Stack.Screen
           name="cart"
           options={{
-            title: "Cart",
+            title: `Cart (${ingredients.length})`,
             presentation: "modal",
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={handleDeleteAllIngredients}
+                disabled={!canDeleteAll}
+                style={{ opacity: canDeleteAll ? 1 : 0.5, marginRight: 8 }}
+              >
+                <Text style={{ color: "#d32f2f", fontWeight: "600" }}>
+                  {loading ? "Deleting..." : "Delete All"}
+                </Text>
+              </TouchableOpacity>
+            ),
           }}
         />
       </Stack>

@@ -1,11 +1,15 @@
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
+import { IngredientsType } from "../constants/types";
 import { useIngredients } from "../contexts/IngredientsProvider";
 const CartScreen = () => {
   const { ingredients, removeIngredient } = useIngredients();
+  const [editingIngredient, setEditingIngredient] =
+    useState<IngredientsType | null>(null);
   const totalPrice = ingredients.reduce(
     (sum, item) => sum + Number(item.price || 0),
     0
@@ -26,7 +30,15 @@ const CartScreen = () => {
                     key={item.id}
                     onDelete={() => removeIngredient(item.id!)}
                   >
-                    <IngredientsListItem ingredientsItem={item} />
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onLongPress={() =>
+                        setEditingIngredient({ ...(item as IngredientsType) })
+                      }
+                      delayLongPress={300}
+                    >
+                      <IngredientsListItem ingredientsItem={item} />
+                    </TouchableOpacity>
                   </SwipeToDelete>
                 ))}
               </View>
@@ -53,7 +65,10 @@ const CartScreen = () => {
         </ScrollView>
 
         <View style={styles.floatingInputs}>
-          <ExpandableInputs />
+          <ExpandableInputs
+            editingIngredient={editingIngredient}
+            onEditingIngredientHandled={() => setEditingIngredient(null)}
+          />
         </View>
       </View>
     </BottomSheetModalProvider>
@@ -72,11 +87,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   container: {
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingTop: 0,
     paddingBottom: 420,
   },
   cartList: {
-    paddingTop: 10,
+    paddingTop: 0,
   },
   emptyCartText: {
     textAlign: "center",
