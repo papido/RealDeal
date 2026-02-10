@@ -51,6 +51,7 @@ type SavedIngredient = {
 type SavedTile = {
   id: string;
   items: SavedIngredient[];
+  recipeName?: string;
   createdAt?: any;
 };
 
@@ -216,8 +217,12 @@ const toBaseAmount = (
 };
 
 const MenuScreen = () => {
-  const { ingredients: ingredientsFromCart } = useLocalSearchParams<{
+  const {
+    ingredients: ingredientsFromCart,
+    selectedTileId: selectedTileIdParam,
+  } = useLocalSearchParams<{
     ingredients?: string;
+    selectedTileId?: string;
   }>();
   const [uid, setUid] = useState<string | null>(
     auth().currentUser?.uid ?? null,
@@ -294,6 +299,7 @@ const MenuScreen = () => {
           .map((doc) => {
             const data = doc.data() as {
               items?: SavedIngredient[];
+              recipeName?: string;
               createdAt?: any;
             };
 
@@ -302,6 +308,7 @@ const MenuScreen = () => {
             return {
               id: doc.id,
               items: data.items,
+              recipeName: data.recipeName,
               createdAt: data.createdAt,
             };
           })
@@ -424,6 +431,14 @@ const MenuScreen = () => {
       setSelectedTileId(filteredTiles[0].id);
     }
   }, [filteredTiles, selectedTileId]);
+
+  useEffect(() => {
+    if (!selectedTileIdParam) return;
+    const exists = filteredTiles.some((tile) => tile.id === selectedTileIdParam);
+    if (exists) {
+      setSelectedTileId(selectedTileIdParam);
+    }
+  }, [filteredTiles, selectedTileIdParam]);
 
   const selectedTile = useMemo(
     () => filteredTiles.find((tile) => tile.id === selectedTileId) ?? null,
@@ -924,6 +939,7 @@ const MenuScreen = () => {
         items: JSON.stringify(selectedTile.items),
         editAll: "1",
         tileId: selectedTile.id,
+        recipeName: selectedTile.recipeName ?? "",
       },
     });
   }, [router, selectedTile]);
@@ -1282,7 +1298,7 @@ const MenuScreen = () => {
             >
               <Text style={styles.dropdownButtonText}>
                 {selectedTile
-                  ? `Saved Ingredients (${selectedTile.items.length})`
+                  ? `${selectedTile.recipeName?.trim() || "Selected Ingredients"} (${selectedTile.items.length})`
                   : "Select saved ingredients"}
               </Text>
               <Ionicons
@@ -1304,7 +1320,7 @@ const MenuScreen = () => {
                       }}
                     >
                       <Text style={styles.dropdownItemText}>
-                        Saved Ingredients #{index + 1} ({tile.items.length})
+                        {tile.recipeName?.trim() || `Saved Ingredients #${index + 1}`} ({tile.items.length})
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -1318,7 +1334,7 @@ const MenuScreen = () => {
                 <View style={styles.selectedTile}>
                   <View style={styles.tileHeader}>
                     <Text style={styles.tileTitle}>
-                      Selected Ingredients ({selectedTile.items.length})
+                      {selectedTile.recipeName?.trim() || "Selected Ingredients"} ({selectedTile.items.length})
                     </Text>
                     <View style={styles.tileActions}>
                       <TouchableOpacity

@@ -3,11 +3,13 @@ import Button from "@/src/components/Button";
 import { ParsedIngredient } from "@/src/constants/types";
 import { parseENLine } from "@/src/utils/enParser";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { CommonActions } from "@react-navigation/native";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import React, { JSX, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
+  Modal,
   Pressable,
   Button as RNButton,
   StyleSheet,
@@ -21,24 +23,44 @@ type EditableField = keyof Pick<
   "quantity" | "unit" | "ingredient"
 >;
 
+type SavedIngredientPayload = {
+  quantity: string | number | null;
+  unit: string | null;
+  ingredient: string | null;
+  resolvedQuantity: number | null;
+  resolvedUnit: string | null;
+  resolvedDensityEstimated: boolean | null;
+};
+
 export default function IngredientParser(): JSX.Element {
-  const { items, editAll, tileId } = useLocalSearchParams<{
+  const {
+    items,
+    editAll,
+    tileId,
+    recipeName: recipeNameParam,
+  } = useLocalSearchParams<{
     items?: string;
     editAll?: string;
     tileId?: string;
+    recipeName?: string;
   }>();
+  const navigation = useNavigation();
   const [rawText, setRawText] = useState<string>("");
   const [parsedIngredients, setParsedIngredients] = useState<
     ParsedIngredient[]
   >([]);
   const [saving, setSaving] = useState(false);
   const [editAllMode, setEditAllMode] = useState(false);
+  const [recipeName, setRecipeName] = useState("");
+  const [showRecipeNamePrompt, setShowRecipeNamePrompt] = useState(false);
+  const [pendingExitEditAll, setPendingExitEditAll] = useState(false);
 
   // inline edit state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draftIngredient, setDraftIngredient] = useState<string>("");
   const [draftQuantity, setDraftQuantity] = useState<string>("");
   const [draftUnit, setDraftUnit] = useState<string>("");
+  const isEditingFromMenu = !!tileId;
 
   useEffect(() => {
     if (!items) return;
@@ -49,10 +71,11 @@ export default function IngredientParser(): JSX.Element {
       setEditingIndex(null);
       setDraftIngredient("");
       setEditAllMode(editAll === "1");
+      setRecipeName(typeof recipeNameParam === "string" ? recipeNameParam : "");
     } catch (error) {
       console.error("Error loading saved ingredients:", error);
     }
-  }, [items, editAll]);
+  }, [items, editAll, recipeNameParam]);
 
   const lines = useMemo(
     () =>
@@ -126,8 +149,8 @@ export default function IngredientParser(): JSX.Element {
     setDraftUnit("");
   };
 
-  const handleSave = async (): Promise<void> => {
-    const cleanIngredients = parsedIngredients
+  const buildCleanIngredients = (): SavedIngredientPayload[] =>
+    parsedIngredients
       .map(
         ({
           quantity,
@@ -147,12 +170,16 @@ export default function IngredientParser(): JSX.Element {
       )
       .filter((item) => item.ingredient);
 
-    if (!cleanIngredients.length || saving) return;
+  const saveIngredients = async (
+    cleanIngredients: SavedIngredientPayload[],
+    recipeNameValue: string,
+  ): Promise<boolean> => {
+    if (!cleanIngredients.length || saving) return false;
 
     const uid = auth().currentUser?.uid ?? null;
     if (!uid) {
       console.error("Cannot save ingredients without a signed-in user.");
-      return;
+      return false;
     }
 
     try {
@@ -165,6 +192,7 @@ export default function IngredientParser(): JSX.Element {
       const docRef = tileId ? collection.doc(tileId) : collection.doc();
       await docRef.set(
         {
+          recipeName: recipeNameValue,
           items: cleanIngredients,
           ...(tileId
             ? { updatedAt: firestore.FieldValue.serverTimestamp() }
@@ -172,41 +200,86 @@ export default function IngredientParser(): JSX.Element {
         },
         { merge: true },
       );
-      Alert.alert("Saved", "Ingredients saved successfully.");
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "index", params: { selectedTileId: docRef.id } }],
+        }),
+      );
+      return true;
     } catch (error) {
       console.error("Error saving parsed ingredients:", error);
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
+  const handleSavePress = async (
+    exitEditAllOnSuccess = false,
+  ): Promise<void> => {
+    const cleanIngredients = buildCleanIngredients();
+
+    if (!cleanIngredients.length || saving) return;
+
+    const trimmedRecipeName = recipeName.trim();
+    if (!trimmedRecipeName) {
+      setPendingExitEditAll(exitEditAllOnSuccess);
+      setShowRecipeNamePrompt(true);
+      return;
+    }
+
+    const didSave = await saveIngredients(cleanIngredients, trimmedRecipeName);
+    if (didSave && exitEditAllOnSuccess) {
+      setEditAllMode(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        multiline
-        placeholder="Paste ingredients here"
-        value={rawText}
-        onChangeText={setRawText}
-      />
-
-      <View style={styles.actionsRow}>
-        <View style={styles.actionsLeft}>
-          <RNButton title="Parse" onPress={handleParse} />
-          <View style={styles.buttonSpacer} />
-          <RNButton
-            title="Clear"
-            onPress={() => {
-              setRawText("");
-              setParsedIngredients([]);
-              setEditingIndex(null);
-              setDraftIngredient("");
-              setDraftQuantity("");
-              setDraftUnit("");
-            }}
+      {isEditingFromMenu && (
+        <>
+          <Text style={styles.recipeNameLabel}>Recipe name</Text>
+          <TextInput
+            style={styles.recipeNameInput}
+            placeholder="Recipe name"
+            value={recipeName}
+            onChangeText={setRecipeName}
+            autoCapitalize="words"
+            returnKeyType="done"
           />
-        </View>
-      </View>
+        </>
+      )}
+
+      {!isEditingFromMenu && (
+        <>
+          <TextInput
+            style={styles.input}
+            multiline
+            placeholder="Paste ingredients here"
+            value={rawText}
+            onChangeText={setRawText}
+          />
+
+          <View style={styles.actionsRow}>
+            <View style={styles.actionsLeft}>
+              <RNButton title="Parse" onPress={handleParse} />
+              <View style={styles.buttonSpacer} />
+              <RNButton
+                title="Clear"
+                onPress={() => {
+                  setRawText("");
+                  setParsedIngredients([]);
+                  setEditingIndex(null);
+                  setDraftIngredient("");
+                  setDraftQuantity("");
+                  setDraftUnit("");
+                }}
+              />
+            </View>
+          </View>
+        </>
+      )}
 
       <FlatList<ParsedIngredient>
         data={parsedIngredients}
@@ -405,13 +478,99 @@ export default function IngredientParser(): JSX.Element {
         }
       />
 
+      <Modal
+        visible={showRecipeNamePrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!saving) {
+            setShowRecipeNamePrompt(false);
+            setPendingExitEditAll(false);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add recipe name</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter a recipe name before saving.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={recipeName}
+              onChangeText={setRecipeName}
+              placeholder="e.g. Chicken Curry"
+              autoCapitalize="words"
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={async () => {
+                const cleanIngredients = buildCleanIngredients();
+                const trimmedRecipeName = recipeName.trim();
+                if (!trimmedRecipeName) {
+                  Alert.alert(
+                    "Recipe name required",
+                    "Please add a recipe name.",
+                  );
+                  return;
+                }
+                setShowRecipeNamePrompt(false);
+                const didSave = await saveIngredients(
+                  cleanIngredients,
+                  trimmedRecipeName,
+                );
+                if (didSave && pendingExitEditAll) {
+                  setEditAllMode(false);
+                }
+                setPendingExitEditAll(false);
+              }}
+            />
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => {
+                  setShowRecipeNamePrompt(false);
+                  setPendingExitEditAll(false);
+                }}
+                style={[styles.modalButton, styles.modalCancelButton]}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  const cleanIngredients = buildCleanIngredients();
+                  const trimmedRecipeName = recipeName.trim();
+                  if (!trimmedRecipeName) {
+                    Alert.alert(
+                      "Recipe name required",
+                      "Please add a recipe name.",
+                    );
+                    return;
+                  }
+                  setShowRecipeNamePrompt(false);
+                  const didSave = await saveIngredients(
+                    cleanIngredients,
+                    trimmedRecipeName,
+                  );
+                  if (didSave && pendingExitEditAll) {
+                    setEditAllMode(false);
+                  }
+                  setPendingExitEditAll(false);
+                }}
+                style={[styles.modalButton, styles.modalSaveButton]}
+                disabled={saving}
+              >
+                <Text style={styles.modalSaveText}>
+                  {saving ? "Saving..." : "Save"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {editAllMode ? (
         <Button
           style={styles.saveButton}
-          onPress={async () => {
-            await handleSave();
-            setEditAllMode(false);
-          }}
+          onPress={() => handleSavePress(true)}
           loading={saving}
           disabled={saving || parsedIngredients.length === 0}
         >
@@ -422,7 +581,7 @@ export default function IngredientParser(): JSX.Element {
       ) : (
         <Button
           style={styles.saveButton}
-          onPress={handleSave}
+          onPress={() => handleSavePress(false)}
           loading={saving}
           disabled={saving || parsedIngredients.length === 0}
         >
@@ -450,6 +609,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     textAlignVertical: "top",
     backgroundColor: "#fafafa",
+  },
+  recipeNameInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderRadius: 10,
+    backgroundColor: "#fafafa",
+  },
+  recipeNameLabel: {
+    fontSize: 13,
+    color: "#444",
+    fontWeight: "600",
+    marginBottom: 6,
+    marginLeft: 3,
   },
   actionsRow: {
     marginBottom: 2,
@@ -566,5 +741,59 @@ const styles = StyleSheet.create({
     color: "#666",
     fontStyle: "italic",
     paddingVertical: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111",
+  },
+  modalSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#666",
+  },
+  modalInput: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  modalButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalCancelButton: {
+    marginRight: 10,
+    backgroundColor: "#f3f4f6",
+  },
+  modalSaveButton: {
+    backgroundColor: "#1a73e8",
+  },
+  modalCancelText: {
+    color: "#111827",
+    fontWeight: "600",
+  },
+  modalSaveText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });
