@@ -11,7 +11,7 @@ export default function OrderStack() {
         },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Orders" }} />
+      <Stack.Screen name="index" options={{ title: "Planner" }} />
     </Stack>
   );
 }

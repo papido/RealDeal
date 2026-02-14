@@ -4,6 +4,7 @@ import { useAuth } from "@/src/contexts/authProvider";
 import { useCart } from "@/src/contexts/CartProvider";
 import * as Location from "expo-location";
 import React, { useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   Alert,
   StyleSheet,
@@ -83,11 +84,18 @@ const ProfileScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#0b1f16", "#0f2a1c", "#122f21"]}
+      style={styles.container}
+    >
       {/* Username Section */}
       <View style={styles.card}>
-        <Text style={styles.label}>Username</Text>
-        {editingField === "username" ? (
+        <LinearGradient
+          colors={["#fef3c7", "#fde68a"]}
+          style={styles.cardGradient}
+        >
+          <Text style={styles.label}>Username</Text>
+          {editingField === "username" ? (
           <View style={styles.editRow}>
             <TextInput
               style={styles.input}
@@ -109,12 +117,17 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         )}
+        </LinearGradient>
       </View>
 
       {/* Email Section */}
       <View style={styles.card}>
-        <Text style={styles.label}>Email</Text>
-        {editingField === "email" ? (
+        <LinearGradient
+          colors={["#fef3c7", "#fde68a"]}
+          style={styles.cardGradient}
+        >
+          <Text style={styles.label}>Email</Text>
+          {editingField === "email" ? (
           <View style={styles.editRow}>
             <TextInput
               style={styles.input}
@@ -136,12 +149,17 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         )}
+        </LinearGradient>
       </View>
 
       {/* Address Section */}
       <View style={styles.card}>
-        <Text style={styles.label}>Address</Text>
-        <View style={styles.displayRow}>
+        <LinearGradient
+          colors={["#fef3c7", "#fde68a"]}
+          style={styles.cardGradient}
+        >
+          <Text style={styles.label}>Address</Text>
+          <View style={styles.displayRow}>
           <Text style={[styles.text, { flex: 1 }]}>
             {user?.address || "No address set"}
           </Text>
@@ -158,13 +176,14 @@ const ProfileScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
+        </LinearGradient>
       </View>
 
       {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -174,11 +193,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fefefe",
+    backgroundColor: "transparent",
   },
   card: {
-    backgroundColor: "#fff",
-    padding: 14,
     borderRadius: 12,
     shadowColor: "#000",
     shadowOpacity: 0.04,
@@ -186,16 +203,21 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
     marginBottom: 16,
+    backgroundColor: "transparent",
+  },
+  cardGradient: {
+    borderRadius: 12,
+    padding: 14,
   },
   label: {
     fontSize: 14,
-    color: "#888",
+    color: "#0f172a",
     marginBottom: 4,
     fontWeight: "600",
   },
   text: {
     fontSize: 16,
-    color: "#333",
+    color: "#0f172a",
   },
   displayRow: {
     flexDirection: "row",
@@ -209,15 +231,16 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderColor: "#ddd",
+    borderColor: "#cbd5f5",
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
     marginRight: 10,
-    backgroundColor: "#fafafa",
+    backgroundColor: "#fff",
+    color: "#0f172a",
   },
   edit: {
-    color: "#007bff",
+    color: "#60a5fa",
     fontWeight: "500",
   },
   disabled: {

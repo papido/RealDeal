@@ -15,6 +15,10 @@ import {
 } from "@/src/utils/ingredientConverter";
 import { findCartMatches } from "@/src/utils/ingredientMatching";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, {
@@ -27,6 +31,8 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -53,6 +59,12 @@ type SavedTile = {
   items: SavedIngredient[];
   recipeName?: string;
   createdAt?: any;
+};
+
+type PlannerSourceTile = {
+  id: string;
+  items: SavedIngredient[];
+  recipeName?: string;
 };
 
 const ingredientsCatalog = ingredientsJson as IngredientsByCategory;
@@ -253,6 +265,13 @@ const MenuScreen = () => {
   const [fixAllLoading, setFixAllLoading] = useState(false);
   const [rewardedLoaded, setRewardedLoaded] = useState(false);
   const [rewardedLoading, setRewardedLoading] = useState(false);
+  const [showPlannerModal, setShowPlannerModal] = useState(false);
+  const [plannerSaving, setPlannerSaving] = useState(false);
+  const [plannerSourceTile, setPlannerSourceTile] =
+    useState<PlannerSourceTile | null>(null);
+  const [plannerDateTime, setPlannerDateTime] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const pendingRewardShowRef = useRef(false);
   const rewardedAdRef = useRef<RewardedAd | null>(null);
 
@@ -944,6 +963,80 @@ const MenuScreen = () => {
     });
   }, [router, selectedTile]);
 
+  const openPlannerModalForTile = useCallback((tile: PlannerSourceTile) => {
+    setPlannerSourceTile(tile);
+    setPlannerDateTime(new Date());
+    setShowDatePicker(false);
+    setShowTimePicker(false);
+    setShowPlannerModal(true);
+  }, []);
+
+  const handleDateChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      if (event.type !== "set" || !selectedDate) {
+        setShowDatePicker(false);
+        return;
+      }
+      setPlannerDateTime((prev) => {
+        const next = new Date(prev);
+        next.setFullYear(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+        );
+        return next;
+      });
+      setShowDatePicker(false);
+    },
+    [],
+  );
+
+  const handleTimeChange = useCallback(
+    (event: DateTimePickerEvent, selectedTime?: Date) => {
+      if (event.type !== "set" || !selectedTime) {
+        setShowTimePicker(false);
+        return;
+      }
+      setPlannerDateTime((prev) => {
+        const next = new Date(prev);
+        next.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
+        return next;
+      });
+      setShowTimePicker(false);
+    },
+    [],
+  );
+
+  const handleSaveToPlanner = useCallback(async () => {
+    if (!uid || !plannerSourceTile || plannerSaving) return;
+
+    const recipeName =
+      plannerSourceTile.recipeName?.trim() || "Saved Ingredients";
+
+    try {
+      setPlannerSaving(true);
+      await firestore()
+        .collection("users")
+        .doc(uid)
+        .collection("plannerEntries")
+        .add({
+          recipeId: plannerSourceTile.id,
+          recipeName,
+          items: plannerSourceTile.items,
+          plannedFor: firestore.Timestamp.fromDate(plannerDateTime),
+          createdAt: firestore.FieldValue.serverTimestamp(),
+        });
+      setShowPlannerModal(false);
+      setPlannerSourceTile(null);
+      Alert.alert("Added to planner", `${recipeName} was scheduled.`);
+    } catch (error) {
+      console.error("Error saving planner entry:", error);
+      Alert.alert("Failed to add planner entry", "Please try again.");
+    } finally {
+      setPlannerSaving(false);
+    }
+  }, [uid, plannerSourceTile, plannerSaving, plannerDateTime]);
+
   const handleResolveMismatch = useCallback(
     async (
       entry: SavedIngredient,
@@ -1273,7 +1366,10 @@ const MenuScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#0b1f16", "#0f2a1c", "#122f21"]}
+      style={styles.container}
+    >
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -1293,23 +1389,31 @@ const MenuScreen = () => {
           <View style={styles.dropdownSection}>
             <TouchableOpacity
               onPress={() => setDropdownOpen((prev) => !prev)}
-              style={styles.dropdownButton}
+              style={styles.dropdownButtonPressable}
               activeOpacity={0.8}
             >
-              <Text style={styles.dropdownButtonText}>
-                {selectedTile
-                  ? `${selectedTile.recipeName?.trim() || "Selected Ingredients"} (${selectedTile.items.length})`
-                  : "Select saved ingredients"}
-              </Text>
-              <Ionicons
-                name={dropdownOpen ? "chevron-up" : "chevron-down"}
-                size={18}
-                color={colors.textLight}
-              />
+              <LinearGradient
+                colors={["#fef3c7", "#fde68a"]}
+                style={styles.dropdownButton}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {selectedTile
+                    ? `${selectedTile.recipeName?.trim() || "Selected Ingredients"} (${selectedTile.items.length})`
+                    : "Select saved ingredients"}
+                </Text>
+                <Ionicons
+                  name={dropdownOpen ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color="#334155"
+                />
+              </LinearGradient>
             </TouchableOpacity>
             {dropdownOpen && (
               <View style={styles.dropdownOverlay}>
-                <View style={styles.dropdownList}>
+                <LinearGradient
+                  colors={["#fef3c7", "#fde68a"]}
+                  style={styles.dropdownList}
+                >
                   {filteredTiles.map((tile, index) => (
                     <TouchableOpacity
                       key={tile.id}
@@ -1318,24 +1422,39 @@ const MenuScreen = () => {
                         setSelectedTileId(tile.id);
                         setDropdownOpen(false);
                       }}
+                      onLongPress={() => {
+                        setDropdownOpen(false);
+                        openPlannerModalForTile(tile);
+                      }}
+                      delayLongPress={300}
                     >
                       <Text style={styles.dropdownItemText}>
                         {tile.recipeName?.trim() || `Saved Ingredients #${index + 1}`} ({tile.items.length})
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </LinearGradient>
               </View>
             )}
           </View>
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.selectionSection}>
               {selectedTile && (
-                <View style={styles.selectedTile}>
-                  <View style={styles.tileHeader}>
-                    <Text style={styles.tileTitle}>
-                      {selectedTile.recipeName?.trim() || "Selected Ingredients"} ({selectedTile.items.length})
-                    </Text>
+                <View style={styles.selectedTileWrap}>
+                  <LinearGradient
+                    colors={["#fef3c7", "#fde68a"]}
+                    style={styles.selectedTile}
+                  >
+                    <View style={styles.tileHeader}>
+                    <TouchableOpacity
+                      onLongPress={() => openPlannerModalForTile(selectedTile)}
+                      delayLongPress={300}
+                      style={styles.recipeNamePressable}
+                    >
+                      <Text style={styles.tileTitle}>
+                        {selectedTile.recipeName?.trim() || "Selected Ingredients"} ({selectedTile.items.length})
+                      </Text>
+                    </TouchableOpacity>
                     <View style={styles.tileActions}>
                       <TouchableOpacity
                         onPress={handleFixAll}
@@ -1367,7 +1486,7 @@ const MenuScreen = () => {
                               : "eye-outline"
                           }
                           size={18}
-                          color={colors.textLight}
+                          color="#334155"
                         />
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -1379,7 +1498,7 @@ const MenuScreen = () => {
                         <Ionicons
                           name="create-outline"
                           size={18}
-                          color={colors.textLight}
+                          color="#334155"
                         />
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -1396,22 +1515,22 @@ const MenuScreen = () => {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <View style={styles.legendRow}>
-                    <Text style={[styles.legendPill, styles.legendGreen]}>
-                      Green = in cart
-                    </Text>
+                    <View style={styles.legendRow}>
+                      <Text style={[styles.legendPill, styles.legendGreen]}>
+                        Green = in cart
+                      </Text>
                     <Text style={[styles.legendPill, styles.legendGray]}>
-                      Gray = not in cart
+                      Black = not in cart
                     </Text>
-                    <Text style={[styles.legendPill, styles.legendYellow]}>
-                      Yellow = unit mismatch
-                    </Text>
-                    <Text style={[styles.legendPill, styles.legendRed]}>
-                      Red = not enough
-                    </Text>
-                  </View>
-                  <View style={styles.tileList}>
-                    {(() => {
+                      <Text style={[styles.legendPill, styles.legendYellow]}>
+                        Yellow = unit mismatch
+                      </Text>
+                      <Text style={[styles.legendPill, styles.legendRed]}>
+                        Red = not enough
+                      </Text>
+                    </View>
+                    <View style={styles.tileList}>
+                      {(() => {
                       let totalSum = 0;
                       const computedEntries = selectedTile.items.map(
                         (entry, entryIndex) => {
@@ -1702,7 +1821,6 @@ const MenuScreen = () => {
                               style={[
                                 styles.tileItem,
                                 styles.tileItemLabel,
-                                !item.isMatch && styles.tileItemDim,
                                 item.isMatch && styles.tileItemMatch,
                                 item.isMatch &&
                                   item.unitMismatch &&
@@ -1722,7 +1840,6 @@ const MenuScreen = () => {
                               <Text
                                 style={[
                                   styles.tileItemMeta,
-                                  !item.isMatch && styles.tileItemDim,
                                   item.isMatch && styles.tileItemMatch,
                                   item.isMatch &&
                                     item.unitMismatch &&
@@ -1777,15 +1894,104 @@ const MenuScreen = () => {
                           ) : null}
                         </>
                       );
-                    })()}
-                  </View>
+                      })()}
+                    </View>
+                  </LinearGradient>
                 </View>
               )}
             </View>
           </ScrollView>
         </>
       )}
-    </View>
+      <Modal
+        visible={showPlannerModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!plannerSaving) {
+            setShowPlannerModal(false);
+            setPlannerSourceTile(null);
+            setShowDatePicker(false);
+            setShowTimePicker(false);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add to planner</Text>
+            <Text style={styles.modalSubtitle}>
+              {plannerSourceTile?.recipeName?.trim() || "Saved Ingredients"}
+            </Text>
+            <View style={styles.datetimeRow}>
+              <Pressable
+                style={styles.datetimeButton}
+                onPress={() => {
+                  setShowTimePicker(false);
+                  setShowDatePicker(true);
+                }}
+              >
+                <Ionicons name="calendar-outline" size={16} color="#fef9c7" />
+                <Text style={styles.datetimeButtonText}>
+                  {plannerDateTime.toLocaleDateString()}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.datetimeButton}
+                onPress={() => {
+                  setShowDatePicker(false);
+                  setShowTimePicker(true);
+                }}
+              >
+                <Ionicons name="time-outline" size={16} color="#fef9c7" />
+                <Text style={styles.datetimeButtonText}>
+                  {plannerDateTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </Pressable>
+            </View>
+            {showDatePicker ? (
+              <DateTimePicker
+                value={plannerDateTime}
+                mode="date"
+                onChange={handleDateChange}
+              />
+            ) : null}
+            {showTimePicker ? (
+              <DateTimePicker
+                value={plannerDateTime}
+                mode="time"
+                onChange={handleTimeChange}
+              />
+            ) : null}
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => {
+                  setShowPlannerModal(false);
+                  setPlannerSourceTile(null);
+                  setShowDatePicker(false);
+                  setShowTimePicker(false);
+                }}
+                style={[styles.modalButton, styles.modalCancelButton]}
+                disabled={plannerSaving}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSaveToPlanner}
+                style={[styles.modalButton, styles.modalSaveButton]}
+                disabled={plannerSaving || !plannerSourceTile}
+              >
+                <Text style={styles.modalSaveText}>
+                  {plannerSaving ? "Saving..." : "Save"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </LinearGradient>
   );
 };
 
@@ -1794,22 +2000,23 @@ export default MenuScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
   },
   scrollContent: {
     paddingBottom: 16,
+    backgroundColor: "transparent",
   },
   infoText: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    color: colors.textLight,
+    color: "#e2e8f0",
     fontStyle: "italic",
   },
   emptyText: {
     textAlign: "center",
     marginTop: 50,
     fontSize: 16,
-    color: colors.textLight,
+    color: "#e2e8f0",
   },
   selectionSection: {
     paddingHorizontal: 16,
@@ -1827,47 +2034,47 @@ const styles = StyleSheet.create({
     zIndex: 3,
     paddingHorizontal: 14,
   },
+  dropdownButtonPressable: {
+    borderRadius: 12,
+  },
   dropdownButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.card,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#cbd5f5",
   },
   dropdownButtonText: {
     fontSize: 15,
-    color: colors.black,
+    color: "#0f172a",
     fontWeight: "600",
   },
   dropdownList: {
     marginTop: 8,
-    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#cbd5f5",
     overflow: "hidden",
   },
   dropdownItem: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: "#e5e7eb",
   },
   dropdownItemText: {
     fontSize: 14,
-    color: colors.black,
+    color: "#0f172a",
   },
   selectedTile: {
-    marginTop: 16,
-    backgroundColor: colors.card,
+    marginTop: 0,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#e5e7eb",
     shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
@@ -1879,11 +2086,10 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: "48%",
-    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#e5e7eb",
     shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
@@ -1894,9 +2100,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tileTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
-    color: colors.black,
+    color: "#0f172a",
   },
   tileHeader: {
     flexDirection: "row",
@@ -1940,7 +2146,7 @@ const styles = StyleSheet.create({
   },
   legendGray: {
     backgroundColor: "#e5e7eb",
-    color: "#4b5563",
+    color: "#000",
   },
   legendRed: {
     backgroundColor: "#fee2e2",
@@ -1957,7 +2163,8 @@ const styles = StyleSheet.create({
   },
   tileItem: {
     fontSize: 14,
-    color: colors.textLight,
+    color: "#000",
+    fontWeight: "700",
   },
   tileItemLabel: {
     flex: 1,
@@ -1965,7 +2172,7 @@ const styles = StyleSheet.create({
   },
   tileItemMeta: {
     fontSize: 12,
-    color: colors.textLight,
+    color: "#64748b",
     textAlign: "right",
   },
   tileItemDim: {
@@ -1993,12 +2200,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 14,
     fontWeight: "700",
-    color: colors.black,
+    color: "#0f172a",
   },
   totalValue: {
     fontSize: 14,
     fontWeight: "700",
-    color: colors.black,
+    color: "#0f172a",
   },
   togglePricesButton: {
     borderRadius: 10,
@@ -2011,7 +2218,7 @@ const styles = StyleSheet.create({
   togglePricesText: {
     fontSize: 13,
     fontWeight: "600",
-    color: colors.black,
+    color: "#0f172a",
   },
   iconButton: {
     paddingHorizontal: 6,
@@ -2036,5 +2243,80 @@ const styles = StyleSheet.create({
   },
   resolveButtonDisabled: {
     opacity: 0.6,
+  },
+  recipeNamePressable: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    backgroundColor: "#111827",
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#f8fafc",
+  },
+  modalSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: "#cbd5f5",
+    fontWeight: "600",
+  },
+  datetimeRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    gap: 10,
+  },
+  datetimeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#1f2937",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  datetimeButtonText: {
+    fontSize: 13,
+    color: "#fef9c7",
+    fontWeight: "600",
+  },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  modalButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalCancelButton: {
+    marginRight: 10,
+    backgroundColor: "#1f2937",
+  },
+  modalSaveButton: {
+    backgroundColor: "#1a73e8",
+  },
+  modalCancelText: {
+    color: "#f8fafc",
+    fontWeight: "600",
+  },
+  modalSaveText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  selectedTileWrap: {
+    marginTop: 16,
   },
 });

@@ -50,7 +50,7 @@ const _layout = () => {
       <Tabs.Screen
         name="orders"
         options={{
-          title: "Orders",
+          title: "Planner",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
             <FontAwesome name="th-list" size={size} color={color} />
