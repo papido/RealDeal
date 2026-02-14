@@ -152,32 +152,32 @@ const ProfileScreen = () => {
         </LinearGradient>
       </View>
 
-      {/* Address Section */}
-      <View style={styles.card}>
+      {/* Address Section (disabled for now) */}
+      {/* <View style={styles.card}>
         <LinearGradient
           colors={["#fef3c7", "#fde68a"]}
           style={styles.cardGradient}
         >
           <Text style={styles.label}>Address</Text>
           <View style={styles.displayRow}>
-          <Text style={[styles.text, { flex: 1 }]}>
-            {user?.address || "No address set"}
-          </Text>
-          <TouchableOpacity
-            onPress={updateAddressAndDelivery}
-            disabled={locationLoading}
-          >
-            <Text style={[styles.edit, locationLoading && styles.disabled]}>
-              {locationLoading
-                ? "Updating..."
-                : user?.address
-                  ? "Update"
-                  : "Set Address"}
+            <Text style={[styles.text, { flex: 1 }]}>
+              {user?.address || "No address set"}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={updateAddressAndDelivery}
+              disabled={locationLoading}
+            >
+              <Text style={[styles.edit, locationLoading && styles.disabled]}>
+                {locationLoading
+                  ? "Updating..."
+                  : user?.address
+                    ? "Update"
+                    : "Set Address"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
-      </View>
+      </View> */}
 
       {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>

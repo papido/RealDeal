@@ -1,6 +1,12 @@
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
@@ -12,7 +18,7 @@ const CartScreen = () => {
     useState<IngredientsType | null>(null);
   const totalPrice = ingredients.reduce(
     (sum, item) => sum + Number(item.price || 0),
-    0
+    0,
   );
 
   return (
@@ -92,7 +98,7 @@ const styles = StyleSheet.create({
     paddingBottom: 420,
   },
   cartList: {
-    paddingTop: 0,
+    paddingTop: 4,
   },
   emptyCartText: {
     textAlign: "center",

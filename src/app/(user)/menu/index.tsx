@@ -20,10 +20,11 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -242,6 +243,7 @@ const MenuScreen = () => {
   const { cartItems } = useCart();
   const { ingredients } = useIngredients();
   const router = useRouter();
+  const navigation = useNavigation();
   const [savedTiles, setSavedTiles] = useState<SavedTile[]>([]);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -266,6 +268,7 @@ const MenuScreen = () => {
   const [rewardedLoaded, setRewardedLoaded] = useState(false);
   const [rewardedLoading, setRewardedLoading] = useState(false);
   const [showPlannerModal, setShowPlannerModal] = useState(false);
+  const [showAiHelpModal, setShowAiHelpModal] = useState(false);
   const [plannerSaving, setPlannerSaving] = useState(false);
   const [plannerSourceTile, setPlannerSourceTile] =
     useState<PlannerSourceTile | null>(null);
@@ -274,6 +277,25 @@ const MenuScreen = () => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const pendingRewardShowRef = useRef(false);
   const rewardedAdRef = useRef<RewardedAd | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitleText}>Menu</Text>
+          <Pressable
+            onPress={() => setShowAiHelpModal(true)}
+            hitSlop={8}
+            style={styles.headerHintButton}
+            accessibilityRole="button"
+            accessibilityLabel="Show AI explanation"
+          >
+            <Ionicons name="help-circle-outline" size={22} color="#111827" />
+          </Pressable>
+        </View>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -1904,6 +1926,36 @@ const MenuScreen = () => {
         </>
       )}
       <Modal
+        visible={showAiHelpModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAiHelpModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>How AI helps</Text>
+            <Text style={styles.modalSubtitle}>
+              AI estimates unit conversions and ingredient matching so you can
+              compare your saved ingredients against what’s in your cart.
+            </Text>
+            <Text style={styles.modalBody}>
+              When units don’t match (e.g., tbsp vs g), AI suggests a best-fit
+              conversion based on ingredient density. You can accept or edit
+              results before saving.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setShowAiHelpModal(false)}
+                style={[styles.modalButton, styles.modalSaveButton]}
+              >
+                <Text style={styles.modalSaveText}>Got it</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={showPlannerModal}
         transparent
         animationType="fade"
@@ -2270,6 +2322,11 @@ const styles = StyleSheet.create({
     color: "#cbd5f5",
     fontWeight: "600",
   },
+  modalBody: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#e2e8f0",
+  },
   datetimeRow: {
     marginTop: 12,
     flexDirection: "row",
@@ -2315,6 +2372,19 @@ const styles = StyleSheet.create({
   modalSaveText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  headerTitleWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  headerHintButton: {
+    marginLeft: 6,
+    paddingVertical: 2,
   },
   selectedTileWrap: {
     marginTop: 16,
