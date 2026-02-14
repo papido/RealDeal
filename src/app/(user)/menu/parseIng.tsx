@@ -5,7 +5,13 @@ import { parseENLine } from "@/src/utils/enParser";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions } from "@react-navigation/native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import React, { JSX, useEffect, useMemo, useState } from "react";
+import React, {
+  JSX,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   Alert,
   FlatList,
@@ -53,6 +59,7 @@ export default function IngredientParser(): JSX.Element {
   const [editAllMode, setEditAllMode] = useState(false);
   const [recipeName, setRecipeName] = useState("");
   const [showRecipeNamePrompt, setShowRecipeNamePrompt] = useState(false);
+  const [showGuidanceModal, setShowGuidanceModal] = useState(false);
   const [pendingExitEditAll, setPendingExitEditAll] = useState(false);
 
   // inline edit state
@@ -61,6 +68,25 @@ export default function IngredientParser(): JSX.Element {
   const [draftQuantity, setDraftQuantity] = useState<string>("");
   const [draftUnit, setDraftUnit] = useState<string>("");
   const isEditingFromMenu = !!tileId;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitleText}>Parse Ingredients</Text>
+          <Pressable
+            onPress={() => setShowGuidanceModal(true)}
+            hitSlop={8}
+            style={styles.headerHintButton}
+            accessibilityRole="button"
+            accessibilityLabel="Show ingredient parsing guidance"
+          >
+            <Ionicons name="help-circle-outline" size={26} color="#111827" />
+          </Pressable>
+        </View>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     if (!items) return;
@@ -479,6 +505,40 @@ export default function IngredientParser(): JSX.Element {
       />
 
       <Modal
+        visible={showGuidanceModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGuidanceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Parsing guidance</Text>
+
+            <Text style={styles.guidancePattern}>
+              1. quantity + unit + ingredient
+            </Text>
+            <Text style={styles.guidanceLine}>
+              2. Keep ingredient name short (max 2 words)
+            </Text>
+            <Text style={styles.guidanceLine}>
+              3. Avoid duplicate ingredients in parsing or cart
+            </Text>
+            <Text style={styles.guidanceLine}>
+              4. Avoid extra notes on the same line.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setShowGuidanceModal(false)}
+                style={[styles.modalButton, styles.modalSaveButton]}
+              >
+                <Text style={styles.modalSaveText}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={showRecipeNamePrompt}
         transparent
         animationType="fade"
@@ -795,5 +855,34 @@ const styles = StyleSheet.create({
   modalSaveText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  headerTitleWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitleText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  headerHintButton: {
+    marginLeft: 6,
+    paddingVertical: 3,
+  },
+  guidancePattern: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  guidanceLine: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#374151",
+  },
+  guidanceBullet: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#374151",
   },
 });
