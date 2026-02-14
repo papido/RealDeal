@@ -3,10 +3,11 @@ import Button from "@/src/components/Button";
 import { ParsedIngredient } from "@/src/constants/types";
 import { parseENLine } from "@/src/utils/enParser";
 import { Ionicons } from "@expo/vector-icons";
-import { CommonActions } from "@react-navigation/native";
+import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import React, {
   JSX,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -23,6 +24,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { WebView } from "react-native-webview";
 
 type EditableField = keyof Pick<
   ParsedIngredient,
@@ -61,6 +63,7 @@ export default function IngredientParser(): JSX.Element {
   const [showRecipeNamePrompt, setShowRecipeNamePrompt] = useState(false);
   const [showGuidanceModal, setShowGuidanceModal] = useState(false);
   const [pendingExitEditAll, setPendingExitEditAll] = useState(false);
+  const [showWebsiteSheet, setShowWebsiteSheet] = useState(false);
 
   // inline edit state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -103,6 +106,12 @@ export default function IngredientParser(): JSX.Element {
     }
   }, [items, editAll, recipeNameParam]);
 
+  useFocusEffect(
+    useCallback(() => {
+      return () => setShowWebsiteSheet(false);
+    }, []),
+  );
+
   const lines = useMemo(
     () =>
       rawText
@@ -111,6 +120,7 @@ export default function IngredientParser(): JSX.Element {
         .filter(Boolean),
     [rawText],
   );
+  const websiteSheetHeight = useMemo(() => 260, []);
 
   const handleParse = (): void => {
     const parsed = lines.map((line) => parseENLine(line) as ParsedIngredient);
@@ -118,6 +128,10 @@ export default function IngredientParser(): JSX.Element {
     setEditingIndex(null);
     setDraftIngredient("");
     setEditAllMode(true);
+  };
+
+  const handleFindWebsite = (): void => {
+    setShowWebsiteSheet(true);
   };
 
   const editIngredient = (
@@ -262,221 +276,145 @@ export default function IngredientParser(): JSX.Element {
   };
 
   return (
-    <View style={styles.container}>
-      {isEditingFromMenu && (
-        <>
-          <Text style={styles.recipeNameLabel}>Recipe name</Text>
-          <TextInput
-            style={styles.recipeNameInput}
-            placeholder="Recipe name"
-            value={recipeName}
-            onChangeText={setRecipeName}
-            autoCapitalize="words"
-            returnKeyType="done"
-          />
-        </>
-      )}
+    <>
+      <View style={styles.container}>
+        {isEditingFromMenu && (
+          <>
+            <Text style={styles.recipeNameLabel}>Recipe name</Text>
+            <TextInput
+              style={styles.recipeNameInput}
+              placeholder="Recipe name"
+              value={recipeName}
+              onChangeText={setRecipeName}
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+          </>
+        )}
 
-      {!isEditingFromMenu && (
-        <>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholder="Paste ingredients here"
-            value={rawText}
-            onChangeText={setRawText}
-          />
+        {!isEditingFromMenu && (
+          <>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholder="Paste ingredients here"
+              value={rawText}
+              onChangeText={setRawText}
+            />
 
-          <View style={styles.actionsRow}>
-            <View style={styles.actionsLeft}>
-              <RNButton title="Parse" onPress={handleParse} />
-              <View style={styles.buttonSpacer} />
-              <RNButton
-                title="Clear"
-                onPress={() => {
-                  setRawText("");
-                  setParsedIngredients([]);
-                  setEditingIndex(null);
-                  setDraftIngredient("");
-                  setDraftQuantity("");
-                  setDraftUnit("");
-                }}
-              />
+            <View style={styles.actionsRow}>
+              <View style={styles.actionsLeft}>
+                <RNButton title="Parse" onPress={handleParse} />
+                <View style={styles.buttonSpacer} />
+                <RNButton
+                  title="Clear"
+                  onPress={() => {
+                    setRawText("");
+                    setParsedIngredients([]);
+                    setEditingIndex(null);
+                    setDraftIngredient("");
+                    setDraftQuantity("");
+                    setDraftUnit("");
+                  }}
+                />
+              </View>
+              <Pressable
+                onPress={handleFindWebsite}
+                style={styles.findWebsiteButton}
+                accessibilityRole="button"
+                accessibilityLabel="Find website"
+              >
+                <Ionicons name="globe-outline" size={16} color="#fff" />
+                <Text style={styles.findWebsiteText}>Find recipe website</Text>
+              </Pressable>
             </View>
-          </View>
-        </>
-      )}
+          </>
+        )}
 
-      <FlatList<ParsedIngredient>
-        data={parsedIngredients}
-        keyExtractor={(_, i) => i.toString()}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          parsedIngredients.length ? (
-            <View style={styles.listHeader}>
-              <Text
-                style={[styles.headerText, styles.cellSmall, styles.headerPad]}
-              >
-                Qty
-              </Text>
-              <Text
-                style={[
-                  styles.headerText,
-                  styles.cellUnit,
-                  styles.headerPadUnit,
-                ]}
-              >
-                Unit
-              </Text>
-              <Text
-                style={[styles.headerText, styles.cellGrow, styles.headerPad]}
-              >
-                Ingredient
-              </Text>
-              <Text style={styles.headerText}>Actions</Text>
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Paste and parse to see results.</Text>
-        }
-        renderItem={({ item, index }) => {
-          const isEditing = !editAllMode && editingIndex === index;
+        <FlatList<ParsedIngredient>
+          data={parsedIngredients}
+          keyExtractor={(_, i) => i.toString()}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            parsedIngredients.length ? (
+              <View style={styles.listHeader}>
+                <Text
+                  style={[
+                    styles.headerText,
+                    styles.cellSmall,
+                    styles.headerPad,
+                  ]}
+                >
+                  Qty
+                </Text>
+                <Text
+                  style={[
+                    styles.headerText,
+                    styles.cellUnit,
+                    styles.headerPadUnit,
+                  ]}
+                >
+                  Unit
+                </Text>
+                <Text
+                  style={[styles.headerText, styles.cellGrow, styles.headerPad]}
+                >
+                  Ingredient
+                </Text>
+                <Text style={styles.headerText}>Actions</Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              Paste and parse to see results.
+            </Text>
+          }
+          renderItem={({ item, index }) => {
+            const isEditing = !editAllMode && editingIndex === index;
 
-          return (
-            <View style={styles.listRow}>
-              {editAllMode ? (
-                <>
-                  <TextInput
-                    style={[
-                      styles.cellSmall,
-                      styles.inlineInput,
-                      styles.inlineInputSmall,
-                    ]}
-                    value={(item.quantity ?? "").toString()}
-                    onChangeText={(text) =>
-                      editIngredient(index, "quantity", text)
-                    }
-                    placeholder="Qty"
-                    keyboardType="numeric"
-                  />
-                  <TextInput
-                    style={[
-                      styles.inlineInput,
-                      styles.inlineInputUnit,
-                      styles.cellUnit,
-                    ]}
-                    value={item.unit ?? ""}
-                    onChangeText={(text) => editIngredient(index, "unit", text)}
-                    placeholder="Unit"
-                  />
-                  <TextInput
-                    style={[
-                      styles.inlineInput,
-                      styles.inlineInputIngredient,
-                      styles.cellGrow,
-                    ]}
-                    value={item.ingredient ?? ""}
-                    onChangeText={(text) =>
-                      editIngredient(index, "ingredient", text)
-                    }
-                    placeholder="Ingredient"
-                  />
-                  <View style={styles.actionCell}>
-                    <Pressable
-                      onPress={() => handleDeleteIngredient(index)}
-                      style={styles.iconButton}
-                      accessibilityLabel="Delete ingredient"
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color="#b91c1c"
-                      />
-                    </Pressable>
-                  </View>
-                </>
-              ) : (
-                <>
-                  {isEditing ? (
+            return (
+              <View style={styles.listRow}>
+                {editAllMode ? (
+                  <>
                     <TextInput
                       style={[
                         styles.cellSmall,
                         styles.inlineInput,
                         styles.inlineInputSmall,
                       ]}
-                      value={draftQuantity}
-                      onChangeText={setDraftQuantity}
+                      value={(item.quantity ?? "").toString()}
+                      onChangeText={(text) =>
+                        editIngredient(index, "quantity", text)
+                      }
                       placeholder="Qty"
                       keyboardType="numeric"
-                      autoFocus
-                      returnKeyType="next"
                     />
-                  ) : (
-                    <Text style={styles.cellSmall}>{item.quantity ?? "?"}</Text>
-                  )}
-
-                  {isEditing ? (
                     <TextInput
                       style={[
                         styles.inlineInput,
                         styles.inlineInputUnit,
                         styles.cellUnit,
                       ]}
-                      value={draftUnit}
-                      onChangeText={setDraftUnit}
+                      value={item.unit ?? ""}
+                      onChangeText={(text) =>
+                        editIngredient(index, "unit", text)
+                      }
                       placeholder="Unit"
-                      returnKeyType="next"
                     />
-                  ) : (
-                    <Text style={styles.cellUnit}>{item.unit ?? "?"}</Text>
-                  )}
-
-                  {isEditing ? (
                     <TextInput
-                      style={[styles.inlineInput, styles.inlineInputIngredient]}
-                      value={draftIngredient}
-                      onChangeText={setDraftIngredient}
+                      style={[
+                        styles.inlineInput,
+                        styles.inlineInputIngredient,
+                        styles.cellGrow,
+                      ]}
+                      value={item.ingredient ?? ""}
+                      onChangeText={(text) =>
+                        editIngredient(index, "ingredient", text)
+                      }
                       placeholder="Ingredient"
-                      onSubmitEditing={doneEdit}
-                      returnKeyType="done"
                     />
-                  ) : (
-                    <Text style={styles.cellGrow}>
-                      {item.ingredient ?? "?"}
-                    </Text>
-                  )}
-
-                  {isEditing ? (
-                    <View style={styles.actionButtons}>
-                      <Pressable onPress={doneEdit} style={styles.linkButton}>
-                        <Text style={styles.linkButtonText}>Done</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handleDeleteIngredient(index)}
-                        style={styles.linkButton}
-                        accessibilityLabel="Delete ingredient"
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={18}
-                          color="#b91c1c"
-                        />
-                      </Pressable>
-                    </View>
-                  ) : (
-                    <View style={styles.actionButtons}>
-                      <Pressable
-                        onPress={() => startEdit(index)}
-                        style={styles.iconButton}
-                        accessibilityLabel="Edit ingredient"
-                      >
-                        <Ionicons
-                          name="create-outline"
-                          size={18}
-                          color="#1a73e8"
-                        />
-                      </Pressable>
+                    <View style={styles.actionCell}>
                       <Pressable
                         onPress={() => handleDeleteIngredient(index)}
                         style={styles.iconButton}
@@ -489,113 +427,188 @@ export default function IngredientParser(): JSX.Element {
                         />
                       </Pressable>
                     </View>
-                  )}
-                </>
-              )}
-            </View>
-          );
-        }}
-        ListFooterComponent={
-          parsedIngredients.length ? (
-            <View style={styles.listFooter}>
-              <RNButton title="Add" onPress={handleAddIngredient} />
-            </View>
-          ) : null
-        }
-      />
+                  </>
+                ) : (
+                  <>
+                    {isEditing ? (
+                      <TextInput
+                        style={[
+                          styles.cellSmall,
+                          styles.inlineInput,
+                          styles.inlineInputSmall,
+                        ]}
+                        value={draftQuantity}
+                        onChangeText={setDraftQuantity}
+                        placeholder="Qty"
+                        keyboardType="numeric"
+                        autoFocus
+                        returnKeyType="next"
+                      />
+                    ) : (
+                      <Text style={styles.cellSmall}>
+                        {item.quantity ?? "?"}
+                      </Text>
+                    )}
 
-      <Modal
-        visible={showGuidanceModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowGuidanceModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Parsing guidance</Text>
+                    {isEditing ? (
+                      <TextInput
+                        style={[
+                          styles.inlineInput,
+                          styles.inlineInputUnit,
+                          styles.cellUnit,
+                        ]}
+                        value={draftUnit}
+                        onChangeText={setDraftUnit}
+                        placeholder="Unit"
+                        returnKeyType="next"
+                      />
+                    ) : (
+                      <Text style={styles.cellUnit}>{item.unit ?? "?"}</Text>
+                    )}
 
-            <Text style={styles.guidancePattern}>
-              1. quantity + unit + ingredient
-            </Text>
-            <Text style={styles.guidanceLine}>
-              2. Keep ingredient name short (max 2 words)
-            </Text>
-            <Text style={styles.guidanceLine}>
-              3. Avoid duplicate ingredients in parsing or cart
-            </Text>
-            <Text style={styles.guidanceLine}>
-              4. Avoid extra notes on the same line.
-            </Text>
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setShowGuidanceModal(false)}
-                style={[styles.modalButton, styles.modalSaveButton]}
-              >
-                <Text style={styles.modalSaveText}>Close</Text>
-              </Pressable>
+                    {isEditing ? (
+                      <TextInput
+                        style={[
+                          styles.inlineInput,
+                          styles.inlineInputIngredient,
+                        ]}
+                        value={draftIngredient}
+                        onChangeText={setDraftIngredient}
+                        placeholder="Ingredient"
+                        onSubmitEditing={doneEdit}
+                        returnKeyType="done"
+                      />
+                    ) : (
+                      <Text style={styles.cellGrow}>
+                        {item.ingredient ?? "?"}
+                      </Text>
+                    )}
+
+                    {isEditing ? (
+                      <View style={styles.actionButtons}>
+                        <Pressable onPress={doneEdit} style={styles.linkButton}>
+                          <Text style={styles.linkButtonText}>Done</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeleteIngredient(index)}
+                          style={styles.linkButton}
+                          accessibilityLabel="Delete ingredient"
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color="#b91c1c"
+                          />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View style={styles.actionButtons}>
+                        <Pressable
+                          onPress={() => startEdit(index)}
+                          style={styles.iconButton}
+                          accessibilityLabel="Edit ingredient"
+                        >
+                          <Ionicons
+                            name="create-outline"
+                            size={18}
+                            color="#1a73e8"
+                          />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeleteIngredient(index)}
+                          style={styles.iconButton}
+                          accessibilityLabel="Delete ingredient"
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color="#b91c1c"
+                          />
+                        </Pressable>
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+            );
+          }}
+          ListFooterComponent={
+            parsedIngredients.length ? (
+              <View style={styles.listFooter}>
+                <RNButton title="Add" onPress={handleAddIngredient} />
+              </View>
+            ) : null
+          }
+        />
+
+        <Modal
+          visible={showGuidanceModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowGuidanceModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Parsing guidance</Text>
+
+              <Text style={styles.guidanceLine}>
+                1. Press Find recipe website button and search your recipe
+                website.
+              </Text>
+              <Text style={styles.guidanceLine}>
+                2. Copy the ingredients and paste in text box 'Parse ingredients
+                here'
+              </Text>
+              <Text style={styles.guidanceLine}>
+                3. Make sure in quantity + unit + ingredient format.
+              </Text>
+              <Text style={styles.guidanceLine}>
+                4. Keep ingredient name short (max 2 words)
+              </Text>
+              <Text style={styles.guidanceLine}>
+                5. Avoid duplicate ingredients in parsing or cart.
+              </Text>
+              <Text style={styles.guidanceLine}>
+                6. Avoid extra notes on the same line.
+              </Text>
+              <View style={styles.modalActions}>
+                <Pressable
+                  onPress={() => setShowGuidanceModal(false)}
+                  style={[styles.modalButton, styles.modalSaveButton]}
+                >
+                  <Text style={styles.modalSaveText}>Close</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <Modal
-        visible={showRecipeNamePrompt}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          if (!saving) {
-            setShowRecipeNamePrompt(false);
-            setPendingExitEditAll(false);
-          }
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Add recipe name</Text>
-            <Text style={styles.modalSubtitle}>
-              Enter a recipe name before saving.
-            </Text>
-            <TextInput
-              style={styles.modalInput}
-              value={recipeName}
-              onChangeText={setRecipeName}
-              placeholder="e.g. Chicken Curry"
-              autoCapitalize="words"
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={async () => {
-                const cleanIngredients = buildCleanIngredients();
-                const trimmedRecipeName = recipeName.trim();
-                if (!trimmedRecipeName) {
-                  Alert.alert(
-                    "Recipe name required",
-                    "Please add a recipe name.",
-                  );
-                  return;
-                }
-                setShowRecipeNamePrompt(false);
-                const didSave = await saveIngredients(
-                  cleanIngredients,
-                  trimmedRecipeName,
-                );
-                if (didSave && pendingExitEditAll) {
-                  setEditAllMode(false);
-                }
-                setPendingExitEditAll(false);
-              }}
-            />
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => {
-                  setShowRecipeNamePrompt(false);
-                  setPendingExitEditAll(false);
-                }}
-                style={[styles.modalButton, styles.modalCancelButton]}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={async () => {
+        <Modal
+          visible={showRecipeNamePrompt}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            if (!saving) {
+              setShowRecipeNamePrompt(false);
+              setPendingExitEditAll(false);
+            }
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Add recipe name</Text>
+              <Text style={styles.modalSubtitle}>
+                Enter a recipe name before saving.
+              </Text>
+              <TextInput
+                style={styles.modalInput}
+                value={recipeName}
+                onChangeText={setRecipeName}
+                placeholder="e.g. Chicken Curry"
+                autoCapitalize="words"
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={async () => {
                   const cleanIngredients = buildCleanIngredients();
                   const trimmedRecipeName = recipeName.trim();
                   if (!trimmedRecipeName) {
@@ -615,42 +628,91 @@ export default function IngredientParser(): JSX.Element {
                   }
                   setPendingExitEditAll(false);
                 }}
-                style={[styles.modalButton, styles.modalSaveButton]}
-                disabled={saving}
-              >
-                <Text style={styles.modalSaveText}>
-                  {saving ? "Saving..." : "Save"}
-                </Text>
-              </Pressable>
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  onPress={() => {
+                    setShowRecipeNamePrompt(false);
+                    setPendingExitEditAll(false);
+                  }}
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    const cleanIngredients = buildCleanIngredients();
+                    const trimmedRecipeName = recipeName.trim();
+                    if (!trimmedRecipeName) {
+                      Alert.alert(
+                        "Recipe name required",
+                        "Please add a recipe name.",
+                      );
+                      return;
+                    }
+                    setShowRecipeNamePrompt(false);
+                    const didSave = await saveIngredients(
+                      cleanIngredients,
+                      trimmedRecipeName,
+                    );
+                    if (didSave && pendingExitEditAll) {
+                      setEditAllMode(false);
+                    }
+                    setPendingExitEditAll(false);
+                  }}
+                  style={[styles.modalButton, styles.modalSaveButton]}
+                  disabled={saving}
+                >
+                  <Text style={styles.modalSaveText}>
+                    {saving ? "Saving..." : "Save"}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {editAllMode ? (
-        <Button
-          style={styles.saveButton}
-          onPress={() => handleSavePress(true)}
-          loading={saving}
-          disabled={saving || parsedIngredients.length === 0}
-        >
-          <Text style={styles.saveButtonText}>
-            {saving ? "Saving..." : "Done & Save"}
-          </Text>
-        </Button>
-      ) : (
-        <Button
-          style={styles.saveButton}
-          onPress={() => handleSavePress(false)}
-          loading={saving}
-          disabled={saving || parsedIngredients.length === 0}
-        >
-          <Text style={styles.saveButtonText}>
-            {saving ? "Saving..." : "Save"}
-          </Text>
-        </Button>
-      )}
-    </View>
+        {editAllMode ? (
+          <Button
+            style={styles.saveButton}
+            onPress={() => handleSavePress(true)}
+            loading={saving}
+            disabled={saving || parsedIngredients.length === 0}
+          >
+            <Text style={styles.saveButtonText}>
+              {saving ? "Saving..." : "Done & Save"}
+            </Text>
+          </Button>
+        ) : (
+          <Button
+            style={styles.saveButton}
+            onPress={() => handleSavePress(false)}
+            loading={saving}
+            disabled={saving || parsedIngredients.length === 0}
+          >
+            <Text style={styles.saveButtonText}>
+              {saving ? "Saving..." : "Save"}
+            </Text>
+          </Button>
+        )}
+        {showWebsiteSheet ? (
+          <View style={styles.websiteOverlay}>
+            <View style={styles.websiteHeader}>
+              <Text style={styles.websiteTitle}>Find recipe website</Text>
+              <Pressable
+                onPress={() => setShowWebsiteSheet(false)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Close website"
+              >
+                <Ionicons name="close" size={18} color="#111827" />
+              </Pressable>
+            </View>
+            <WebView source={{ uri: "https://www.google.com" }} />
+          </View>
+        ) : null}
+      </View>
+    </>
   );
 }
 
@@ -688,6 +750,9 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     marginBottom: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   actionsLeft: {
     flexDirection: "row",
@@ -696,6 +761,50 @@ const styles = StyleSheet.create({
   },
   buttonSpacer: {
     width: 10,
+  },
+  findWebsiteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#0b7a2a",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  findWebsiteText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  websiteOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: 140,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  websiteHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  websiteTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
   },
   listContent: {
     paddingBottom: 16,
