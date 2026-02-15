@@ -1459,6 +1459,12 @@ const MenuScreen = () => {
               </View>
             )}
           </View>
+          {dropdownOpen && (
+            <Pressable
+              style={styles.dropdownBackdrop}
+              onPress={() => setDropdownOpen(false)}
+            />
+          )}
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.selectionSection}>
               {selectedTile && (
@@ -2077,6 +2083,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     zIndex: 2,
+  },
+  dropdownBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   dropdownOverlay: {
     position: "absolute",
