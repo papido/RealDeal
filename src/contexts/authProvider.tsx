@@ -198,7 +198,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const docRef = firestore().collection("users").doc(uid);
       const docSnap = await docRef.get();
-      let data = docSnap.data() as { aiCredits?: number } | undefined;
+      type UserDocData = {
+        uid?: string;
+        email?: string | null;
+        username?: string | null;
+        image?: any;
+        address?: string | null;
+        phoneNumber?: string | null;
+        aiCredits?: number;
+      };
+      let data = docSnap.data() as UserDocData | undefined;
       const authUser = auth().currentUser;
       if (typeof data?.aiCredits !== "number") {
         await docRef.set({ aiCredits: 5 }, { merge: true });
@@ -206,11 +215,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
       return {
         uid: data?.uid || authUser?.uid,
-        email: data?.email || authUser?.email || null,
-        username: data?.username || authUser?.displayName || null,
+        email: data?.email || authUser?.email || undefined,
+        username: data?.username || authUser?.displayName || "",
         image: data?.image || null,
-        address: data?.address || null,
-        phoneNumber: data?.phoneNumber || null,
+        address: data?.address || undefined,
+        phoneNumber: data?.phoneNumber || "",
         aiCredits: data?.aiCredits,
       };
     } catch (error) {
