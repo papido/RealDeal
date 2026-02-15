@@ -1,5 +1,4 @@
 import { Timestamp } from "@react-native-firebase/firestore";
-import * as Notifications from "expo-notifications";
 import { ViewStyle } from "react-native";
 
 export type ProductType = {
@@ -116,9 +115,6 @@ export interface AuthContextType {
   ) => Promise<{ success: boolean; msg?: string }>;
   logout: () => Promise<void>;
   updateUserData: (uid: string) => Promise<UserType | null>;
-  expoPushToken?: string | null;
-  notification?: Notifications.Notification | null;
-  error?: Error | null;
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
   // signInWithPhoneNumber: () => Promise<void>;

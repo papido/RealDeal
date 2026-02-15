@@ -1,18 +1,15 @@
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
-import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import React, {
   createContext,
   ReactNode,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
 import { AuthContextType, UserType } from "@/src/constants/types";
-import { registerForPushNotificationsAsync } from "@/src/services/registerForPushNotificationsAsync";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Alert } from "react-native";
 
@@ -23,17 +20,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<UserType>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-  const [notification, setNotification] =
-    useState<Notifications.Notification | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-
-  const notificationListener = useRef<ReturnType<
-    typeof Notifications.addNotificationReceivedListener
-  > | null>(null);
-  const responseListener = useRef<ReturnType<
-    typeof Notifications.addNotificationResponseReceivedListener
-  > | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   // const [confirm, setConfirm] =
@@ -54,95 +40,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         const userData = await updateUserData(firebaseUser.uid);
         if (userData) {
           setUser(userData);
-          if (!expoPushToken) {
-            await setupNotifications(firebaseUser.uid);
-          }
           console.log("User data:", userData);
         }
       } else {
         setUser(null);
         console.log("User logged out:", user);
-        cleanupNotifications();
       }
       setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
-
-  const setupNotifications = async (uid: string) => {
-    try {
-      // Check current permission status
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      console.log("📱 Current permission status:", existingStatus);
-
-      let finalStatus = existingStatus;
-      if (existingStatus !== "granted") {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-        console.log("📱 Requested permission status:", finalStatus);
-      }
-
-      if (finalStatus !== "granted") {
-        console.log("❌ Push notification permissions not granted");
-        return;
-      }
-
-      const token = await registerForPushNotificationsAsync();
-      console.log("🎯 Generated push token:", token);
-
-      if (token) {
-        setExpoPushToken(token);
-
-        // Save to Firestore
-        await firestore().collection("users").doc(uid).set(
-          {
-            expoPushToken: token,
-          },
-          { merge: true }
-        );
-
-        console.log("💾 Token saved to Firestore for user:", uid);
-      }
-
-      // Test if listeners are working
-      notificationListener.current =
-        Notifications.addNotificationReceivedListener((notification) => {
-          console.log("🔔 [FOREGROUND] Notification Received:", notification);
-          setNotification(notification);
-
-          // Show an alert to confirm reception
-          Alert.alert(
-            "Order Received!",
-            JSON.stringify(notification.request.content, null, 2)
-          );
-        });
-
-      responseListener.current =
-        Notifications.addNotificationResponseReceivedListener((response) => {
-          // console.log("🔔 [INTERACTION] Notification Tapped:", response);
-          // Alert.alert(
-          //   "Notification !",
-          //   JSON.stringify(response.notification.request.content, null, 2)
-          // );
-        });
-
-      console.log("✅ Notification listeners set up successfully");
-    } catch (err: any) {
-      setError(err);
-      console.error("❌ Notification setup error:", err);
-    }
-  };
-
-  const cleanupNotifications = () => {
-    notificationListener.current?.remove();
-    responseListener.current?.remove();
-    notificationListener.current = null;
-    responseListener.current = null;
-    setExpoPushToken(null);
-    setNotification(null);
-  };
 
   //Phone Auth
   // const signInWithPhoneNumber = async () => {
@@ -234,7 +142,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         { merge: true }
       );
 
-      console.log("✅ Email login successful");
+      console.log("Email login successful");
       return { success: true };
     } catch (error: any) {
       return { success: false, msg: parseAuthError(error.message) };
@@ -291,14 +199,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const docRef = firestore().collection("users").doc(uid);
       const docSnap = await docRef.get();
       let data = docSnap.data() as { aiCredits?: number } | undefined;
+      const authUser = auth().currentUser;
       if (typeof data?.aiCredits !== "number") {
         await docRef.set({ aiCredits: 5 }, { merge: true });
         data = { ...(data ?? {}), aiCredits: 5 };
       }
       return {
-        uid: data?.uid,
-        email: data?.email || null,
-        username: data?.username || null,
+        uid: data?.uid || authUser?.uid,
+        email: data?.email || authUser?.email || null,
+        username: data?.username || authUser?.displayName || null,
         image: data?.image || null,
         address: data?.address || null,
         phoneNumber: data?.phoneNumber || null,
@@ -330,9 +239,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     logout,
     register,
     updateUserData,
-    expoPushToken,
-    notification,
-    error,
     isLoading,
     signInWithGoogle,
     // signInWithPhoneNumber,

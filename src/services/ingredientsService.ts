@@ -2,10 +2,13 @@ import { firestore } from "@/config/firebase";
 import { IngredientsType, ResponseType } from "@/src/constants/types";
 import { Timestamp } from "@react-native-firebase/firestore";
 
-export const getAllIngredients = (onUpdate: any) => {
+const getIngredientsCollection = (uid: string) =>
+  firestore().collection("users").doc(uid).collection("ingredients");
+
+export const getAllIngredients = (uid: string, onUpdate: any) => {
+  if (!uid) return () => {};
   // Listen to changes in real time
-  const unsubscribe = firestore()
-    .collection("ingredients")
+  const unsubscribe = getIngredientsCollection(uid)
     .orderBy("createdAt", "desc")
     .onSnapshot(
       (snapshot) => {
@@ -28,9 +31,11 @@ export const getAllIngredients = (onUpdate: any) => {
 };
 
 export const createIngredients = async (
+  uid: string,
   ingredientsData: Partial<IngredientsType>
 ): Promise<ResponseType> => {
   try {
+    if (!uid) return { success: false, msg: "Missing user id." };
     const ingredientsToSave: any = {
       ...ingredientsData,
       name: ingredientsData.name || "",
@@ -41,9 +46,10 @@ export const createIngredients = async (
       createdAt: ingredientsData.createdAt || Timestamp.fromDate(new Date()),
     };
 
+    const collection = getIngredientsCollection(uid);
     const ingredientRef = ingredientsData?.id
-      ? firestore().collection("ingredients").doc(ingredientsData.id)
-      : firestore().collection("ingredients").doc(); // Auto-generated ID
+      ? collection.doc(ingredientsData.id)
+      : collection.doc(); // Auto-generated ID
 
     // 🔧 Add id to the data before saving
     ingredientsToSave.id = ingredientRef.id;
@@ -60,21 +66,21 @@ export const createIngredients = async (
   }
 };
 
-const ingredientsCollection = firestore().collection("ingredients");
-
-export const deleteIngredient = async (id: string) => {
+export const deleteIngredient = async (uid: string, id: string) => {
   try {
+    if (!uid) return;
     console.log("Attempting to delete Firestore ingredient ID:", id);
-    await ingredientsCollection.doc(id).delete();
+    await getIngredientsCollection(uid).doc(id).delete();
     console.log("Successfully deleted ingredient:", id);
   } catch (error) {
     console.error("Error deleting ingredient:", error);
   }
 };
 
-export const deleteAllIngredients = async () => {
+export const deleteAllIngredients = async (uid: string) => {
   try {
-    const snapshot = await ingredientsCollection.get();
+    if (!uid) return;
+    const snapshot = await getIngredientsCollection(uid).get();
     if (snapshot.empty) return;
 
     const batch = firestore().batch();

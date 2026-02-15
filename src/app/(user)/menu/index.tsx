@@ -7,7 +7,6 @@ import {
   ParsedIngredient,
 } from "@/src/constants/types";
 import { VOLUME_UNITS, VolumeUnit } from "@/src/constants/volumeUnits";
-import { useCart } from "@/src/contexts/CartProvider";
 import { useIngredients } from "@/src/contexts/IngredientsProvider";
 import {
   convertIngredient,
@@ -240,7 +239,6 @@ const MenuScreen = () => {
   const [uid, setUid] = useState<string | null>(
     auth().currentUser?.uid ?? null,
   );
-  const { cartItems } = useCart();
   const { ingredients } = useIngredients();
   const router = useRouter();
   const navigation = useNavigation();
@@ -498,17 +496,17 @@ const MenuScreen = () => {
 
   const matchedIngredientSet = useMemo(() => {
     if (!selectedTile) return new Set<string>();
-    const matches = findCartMatches(
-      selectedTile.items as ParsedIngredient[],
-      cartItems,
-      ingredients.map((item) => item.name),
-    );
+      const matches = findCartMatches(
+        selectedTile.items as ParsedIngredient[],
+        [],
+        ingredients.map((item) => item.name),
+      );
     return new Set(
       matches
         .map((item) => normalizeIngredient(item.ingredient ?? ""))
         .filter(Boolean),
     );
-  }, [selectedTile, cartItems, ingredients, focusTick, normalizeIngredient]);
+  }, [selectedTile, ingredients, focusTick, normalizeIngredient]);
   const ingredientStockMap = useMemo(() => {
     const map = new Map<
       string,
@@ -1415,7 +1413,7 @@ const MenuScreen = () => {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={["#fef3c7", "#fde68a"]}
+                colors={["#facc15", "#eab308"]}
                 style={styles.dropdownButton}
               >
                 <Text style={styles.dropdownButtonText}>
@@ -1433,7 +1431,7 @@ const MenuScreen = () => {
             {dropdownOpen && (
               <View style={styles.dropdownOverlay}>
                 <LinearGradient
-                  colors={["#fef3c7", "#fde68a"]}
+                  colors={["#facc15", "#eab308"]}
                   style={styles.dropdownList}
                 >
                   {filteredTiles.map((tile, index) => (
@@ -2097,7 +2095,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#cbd5f5",
+    borderColor: "#ca8a04",
   },
   dropdownButtonText: {
     fontSize: 15,
@@ -2108,7 +2106,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#cbd5f5",
+    borderColor: "#ca8a04",
     overflow: "hidden",
   },
   dropdownItem: {

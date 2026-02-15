@@ -7,6 +7,7 @@ import {
   getAllIngredients,
 } from "@/src/services/ingredientsService";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./authProvider";
 
 type IngredientsContextType = {
   ingredients: IngredientsType[];
@@ -25,33 +26,43 @@ export const IngredientsProvider = ({
 }) => {
   const [ingredients, setIngredients] = useState<IngredientsType[]>([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const uid = user?.uid ?? "";
 
   // ✅ Real-time listener: subscribes to Firestore
   useEffect(() => {
-    const unsubscribe = getAllIngredients((data: any) => {
+    if (!uid) {
+      setIngredients([]);
+      return;
+    }
+
+    const unsubscribe = getAllIngredients(uid, (data: any) => {
       setIngredients(data);
     });
 
     // stop listening when unmounting
     return () => unsubscribe();
-  }, []);
+  }, [uid]);
 
   const addIngredient = async (ingredient: IngredientsType) => {
+    if (!uid) return;
     setLoading(true);
-    await createIngredients(ingredient);
+    await createIngredients(uid, ingredient);
     setLoading(false);
   };
 
   const removeIngredient = async (id: string) => {
+    if (!uid) return;
     setLoading(true);
-    await deleteIngredient(id);
+    await deleteIngredient(uid, id);
     setLoading(false);
   };
 
   const clearIngredients = async () => {
+    if (!uid) return;
     setLoading(true);
     try {
-      await deleteAllIngredients();
+      await deleteAllIngredients(uid);
     } finally {
       setLoading(false);
     }

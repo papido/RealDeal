@@ -3,7 +3,7 @@ import Button from "@/src/components/Button";
 import { useAuth } from "@/src/contexts/authProvider";
 import { useCart } from "@/src/contexts/CartProvider";
 import * as Location from "expo-location";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Alert,
@@ -16,7 +16,7 @@ import {
 
 const ProfileScreen = () => {
   const { logout, user, updateUserData, setUser } = useAuth();
-  const { getLocation, calculateDeliveryFromAddress, cartItems } = useCart();
+  const { getLocation, calculateDeliveryFromAddress } = useCart();
   const [editingField, setEditingField] = useState<"username" | "email" | null>(
     null
   );
@@ -25,6 +25,13 @@ const ProfileScreen = () => {
     email: user?.email || "",
   });
   const [locationLoading, setLocationLoading] = useState(false);
+
+  useEffect(() => {
+    setForm({
+      username: user?.username || "",
+      email: user?.email || "",
+    });
+  }, [user?.username, user?.email]);
 
   const updateField = async (field: "username" | "email") => {
     if (!user?.uid) return;
@@ -68,9 +75,7 @@ const ProfileScreen = () => {
       let message = "Address updated!";
       try {
         await calculateDeliveryFromAddress(fullAddress);
-        message += cartItems?.length
-          ? " Delivery calculated for your items."
-          : " Ready when you add items to your cart.";
+        message += " Delivery calculated for your address.";
       } catch {
         message += " But delivery rate calculation failed.";
       }

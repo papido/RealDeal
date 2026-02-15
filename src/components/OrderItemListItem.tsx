@@ -2,7 +2,6 @@ import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
 import { OrderItem } from "../constants/types";
-import { useCart } from "../contexts/CartProvider";
 import { defaultPizzaImage } from "./ProductListItem";
 
 type OrderItemListItemProps = {
@@ -10,8 +9,6 @@ type OrderItemListItemProps = {
 };
 
 const OrderItemListItem = ({ item }: OrderItemListItemProps) => {
-  const { order } = useCart();
-
   return (
     <View style={styles.container}>
       <Image
@@ -22,7 +19,7 @@ const OrderItemListItem = ({ item }: OrderItemListItemProps) => {
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.title}>{item.productName}</Text>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.price}>RM{order.total?.toFixed(2)}</Text>
+          <Text style={styles.price}>RM{item.totalItem.price.toFixed(2)}</Text>
         </View>
       </View>
       <View style={styles.quantitySelector}>

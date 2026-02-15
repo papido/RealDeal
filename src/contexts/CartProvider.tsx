@@ -1,20 +1,6 @@
-import { createOrder } from "@/src/services/orderService";
-import firestore from "@react-native-firebase/firestore";
-import storage from "@react-native-firebase/storage";
-import dayjs from "dayjs";
-import { randomUUID } from "expo-crypto";
 import * as Location from "expo-location";
-import { router } from "expo-router";
 import { createContext, PropsWithChildren, useContext, useState } from "react";
 import { Alert } from "react-native";
-import {
-  CartItem,
-  OrderType,
-  PaymentType,
-  ProductType,
-  TotalItem,
-} from "../constants/types";
-import { useAuth } from "./authProvider";
 
 // Location and delivery constants
 const DELIVERY_RATE_PER_KM = 2.5; // RM 2.50 per km
@@ -32,15 +18,6 @@ interface DeliveryInfo {
 }
 
 type CartType = {
-  items: CartItem[];
-  order: OrderType;
-  addItem: (product: ProductType, item: CartItem["totalItem"]) => void;
-  updateQuantity: (itemId: string, amount: -1 | 1) => void;
-  total: number;
-  checkout: (deliveryDate: Date) => void;
-  loading: boolean;
-  submitPayment: (image: string) => void;
-  payment: PaymentType | null;
   getLocation: () => Promise<Location.LocationObject>;
   location: Location.LocationObject | null;
   deliveryInfo: DeliveryInfo | null;
@@ -48,21 +25,10 @@ type CartType = {
   locationError: string | null;
   calculateDeliveryForCurrentLocation: () => Promise<void>;
   calculateDeliveryFromAddress: (address: string) => Promise<void>;
-  getTotalWithDelivery: () => number;
-  cartItems: CartItem[]; // Added this to expose cart items
   clearDeliveryInfo: () => void; // Added this for better state management
 };
 
 export const CartContext = createContext<CartType>({
-  items: [],
-  order: {},
-  addItem: () => {},
-  updateQuantity: () => {},
-  total: 0,
-  checkout: () => {},
-  submitPayment: () => {},
-  loading: false,
-  payment: null,
   getLocation: async () => {
     return {
       coords: {
@@ -83,17 +49,10 @@ export const CartContext = createContext<CartType>({
   locationError: null,
   calculateDeliveryForCurrentLocation: async () => {},
   calculateDeliveryFromAddress: async () => {},
-  getTotalWithDelivery: () => 0,
-  cartItems: [],
   clearDeliveryInfo: () => {},
 });
 
 const CartProvider = ({ children }: PropsWithChildren) => {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [order, setOrder] = useState<OrderType>({ id: "" });
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [payment, setPayment] = useState<PaymentType | null>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
@@ -265,145 +224,6 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  const addItem = async (product: ProductType, totalItem: TotalItem) => {
-    const existingItem = items.find((item) => item.product.id === product.id);
-
-    if (existingItem) {
-      updateQuantity(existingItem.id!, 1);
-      return;
-    }
-
-    const newCartItem: CartItem = {
-      id: randomUUID().split("-")[0],
-      product,
-      totalItem,
-      quantity: 1,
-    };
-
-    setItems([newCartItem, ...items]);
-
-    // Calculate delivery info based on user's situation
-    if (user && !deliveryInfo) {
-      try {
-        if (user.address) {
-          // User has address, calculate delivery from address
-          await calculateDeliveryFromAddress(user.address);
-        } else {
-          // User has no address, get current location
-          await calculateDeliveryForCurrentLocation();
-        }
-      } catch (error) {
-        console.log("Could not calculate delivery automatically:", error);
-        // Don't block adding items if delivery calculation fails
-      }
-    }
-  };
-
-  const updateQuantity = (itemId: string, amount: -1 | 1) => {
-    setItems(
-      items
-        .map((item) =>
-          item.id !== itemId
-            ? item
-            : { ...item, quantity: item.quantity + amount }
-        )
-        .filter((item) => item.quantity > 0)
-    );
-  };
-
-  const total = items.reduce(
-    (sum, item) => (sum += item.totalItem.price * item.quantity),
-    0
-  );
-
-  const getTotalWithDelivery = (): number => {
-    if (!deliveryInfo?.isWithinRange) return total;
-    return parseFloat((total + deliveryInfo.fee).toFixed(2));
-  };
-
-  const checkout = async (deliveryDate: Date) => {
-    const now = dayjs();
-    const finalTotal = getTotalWithDelivery();
-
-    const newOrder: OrderType = {
-      id: randomUUID().split("-")[0],
-      createdAt: now.toISOString(),
-      total: finalTotal,
-      uid: user?.uid!,
-      status: "Pending",
-      deliveryDateTime: dayjs(deliveryDate).format("dddd, MMM D YYYY • h:mm A"),
-      orderItems: items.map((item) => ({
-        id: item.id,
-        productName: item.product.name,
-        productImage: item.product.images[0].uri,
-        totalItem: {
-          price: item.totalItem.price,
-        },
-        quantity: item.quantity,
-      })),
-    };
-    setOrder(newOrder);
-    setItems([]);
-    // Clear delivery info after checkout
-    clearDeliveryInfo();
-    router.dismissTo("/(user)/menu");
-    router.replace("/qrPayment");
-  };
-
-  const submitPayment = async (image: string) => {
-    setLoading(true);
-
-    try {
-      let res = await createOrder(order);
-      if (res.success) {
-        console.log("Order successfully created", res);
-      } else {
-        Alert.alert("Order", res.msg);
-        setLoading(false);
-        return;
-      }
-
-      let downloadURL = "";
-      if (image && image !== "") {
-        try {
-          // Convert image to blob
-          const response = await fetch(image);
-          const blob = await response.blob();
-
-          // Create storage reference and upload
-          const filename = `payment_proofs/${order.uid}_${Date.now()}.jpg`;
-          const storageRef = storage().ref(filename);
-          await storageRef.put(blob);
-
-          // Get download URL
-          downloadURL = await storageRef.getDownloadURL();
-        } catch (error) {
-          console.error("Image upload failed:", error);
-          // Optionally handle fallback here or notify user
-        }
-      }
-
-      // Create payment data and add to Firestore using the new API
-      const paymentData: PaymentType = {
-        imageUrl: downloadURL,
-        timestamp: firestore.Timestamp.now(),
-        uid: order.uid,
-        amount: order.total,
-        id: order.id,
-      };
-
-      await firestore().collection("payment_uploads").add(paymentData);
-
-      setPayment(paymentData);
-      setLoading(false);
-      alert("Payment uploaded. Waiting for approval.");
-    } catch (error) {
-      console.error("Error submitting payment:", error);
-      Alert.alert("Error", "Failed to submit payment. Please try again.");
-      setLoading(false);
-    }
-  };
-
   const getLocation = async (): Promise<Location.LocationObject> => {
     const location = await Location.getCurrentPositionAsync({});
     setLocation(location);
@@ -413,15 +233,6 @@ const CartProvider = ({ children }: PropsWithChildren) => {
   return (
     <CartContext.Provider
       value={{
-        items,
-        addItem,
-        updateQuantity,
-        total,
-        checkout,
-        order,
-        loading,
-        submitPayment,
-        payment,
         getLocation,
         location,
         deliveryInfo,
@@ -429,8 +240,6 @@ const CartProvider = ({ children }: PropsWithChildren) => {
         locationError,
         calculateDeliveryForCurrentLocation,
         calculateDeliveryFromAddress,
-        getTotalWithDelivery,
-        cartItems: items,
         clearDeliveryInfo,
       }}
     >

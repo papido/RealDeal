@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { IngredientsType } from "../constants/types";
 import Button from "./Button";
+import { useAuth } from "../contexts/authProvider";
 
 type ExpandableInputsProps = {
   editingIngredient?: IngredientsType | null;
@@ -32,6 +33,8 @@ const ExpandableInputs = ({
   const { showActionSheetWithOptions } = useActionSheet();
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["55%"], []);
+  const { user } = useAuth();
+  const uid = user?.uid ?? "";
 
   const [ingredients, setIngredients] = useState<IngredientsType>({
     name: "",
@@ -137,6 +140,11 @@ const ExpandableInputs = ({
       return;
     }
 
+    if (!uid) {
+      Alert.alert("Sign in required", "Please sign in to save ingredients.");
+      return;
+    }
+
     setLoading(true);
 
     const originalName = ingredients.name.trim();
@@ -152,7 +160,7 @@ const ExpandableInputs = ({
         ? (Number(ingredients.price) / convertedWeight).toFixed(4)
         : "0";
 
-    const res = await createIngredients({
+    const res = await createIngredients(uid, {
       id: ingredients.id,
       name: originalName,
       price: Number(ingredients.price),
