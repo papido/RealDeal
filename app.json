@@ -63,14 +63,6 @@
         }
       ],
       [
-        "@react-native-firebase/messaging",
-        {
-          "ios": {
-            "useFrameworkSystemDefault": false
-          }
-        }
-      ],
-      [
         "expo-build-properties",
         {
           "android": {
