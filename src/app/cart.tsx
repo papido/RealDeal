@@ -12,8 +12,10 @@ import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
 import { IngredientsType } from "../constants/types";
 import { useIngredients } from "../contexts/IngredientsProvider";
+import { useCurrency } from "../contexts/CurrencyProvider";
 const CartScreen = () => {
   const { ingredients, removeIngredient } = useIngredients();
+  const { formatCurrency } = useCurrency();
   const [editingIngredient, setEditingIngredient] =
     useState<IngredientsType | null>(null);
   const totalPrice = ingredients.reduce(
@@ -61,7 +63,7 @@ const CartScreen = () => {
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
                     <Text style={styles.totalValue}>
-                      RM{totalPrice.toFixed(2)}
+                      {formatCurrency(totalPrice)}
                     </Text>
                   </View>
                 </View>

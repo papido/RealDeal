@@ -27,7 +27,7 @@ const _layout = () => {
             const state = navigation.getState();
             const focusedRoute = state.routes[state.index];
             const menuRoute = state.routes.find(
-              (route) => route.name === "menu"
+              (route: any) => route.name === "menu",
             );
             const menuStackKey = menuRoute?.state?.key;
 
@@ -48,7 +48,7 @@ const _layout = () => {
         }}
       />
       <Tabs.Screen
-        name="orders"
+        name="planner"
         options={{
           title: "Planner",
           headerShown: false,

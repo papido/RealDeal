@@ -18,6 +18,7 @@ import {
 import { IngredientsType } from "../constants/types";
 import Button from "./Button";
 import { useAuth } from "../contexts/authProvider";
+import { useCurrency } from "../contexts/CurrencyProvider";
 
 type ExpandableInputsProps = {
   editingIngredient?: IngredientsType | null;
@@ -34,6 +35,7 @@ const ExpandableInputs = ({
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["55%"], []);
   const { user } = useAuth();
+  const { currencySymbol } = useCurrency();
   const uid = user?.uid ?? "";
 
   const [ingredients, setIngredients] = useState<IngredientsType>({
@@ -258,7 +260,7 @@ const ExpandableInputs = ({
           {unitPrice && (
             <Text
               style={styles.unitPrice}
-            >{`$${unitPrice} / ${ingredients.unit}`}</Text>
+            >{`${currencySymbol}${unitPrice} / ${ingredients.unit}`}</Text>
           )}
 
           {!!errors && <Text style={styles.errorText}>{errors}</Text>}

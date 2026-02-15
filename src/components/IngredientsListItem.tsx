@@ -5,6 +5,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
 import { IngredientsType } from "../constants/types";
+import { useCurrency } from "../contexts/CurrencyProvider";
 import { convertWeightFromBase, Unit } from "../utils/invUnitConverter";
 dayjs.extend(relativeTime);
 
@@ -13,6 +14,7 @@ type IngredientsListItemProps = {
 };
 
 const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
+  const { formatCurrency } = useCurrency();
   const createdAt =
     ingredientsItem.createdAt instanceof Timestamp
       ? ingredientsItem.createdAt.toDate()
@@ -41,7 +43,7 @@ const IngredientsListItem = ({ ingredientsItem }: IngredientsListItemProps) => {
           {ingredientsItem.name}
         </Text>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.price}>RM{ingredientsItem.price.toFixed(2)}</Text>
+          <Text style={styles.price}>{formatCurrency(Number(ingredientsItem.price || 0))}</Text>
           {createdAt && (
             <Text style={styles.time}>
               {" "}

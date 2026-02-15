@@ -92,6 +92,7 @@ export type UserType = {
   image?: any;
   address?: string;
   phoneNumber: string;
+  currencySymbol?: string;
   aiCredits?: number;
 } | null;
 

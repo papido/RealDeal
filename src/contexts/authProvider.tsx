@@ -104,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           username: userCredential.user.displayName,
           email: userCredential.user.email,
           uid: userCredential.user.uid,
+          currencySymbol: "$",
           lastSignedIn: firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -137,6 +138,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           username,
           email,
           uid: response.user.uid,
+          currencySymbol: "$",
           lastSignedIn: firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -205,13 +207,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         image?: any;
         address?: string | null;
         phoneNumber?: string | null;
+        currencySymbol?: string;
         aiCredits?: number;
       };
       let data = docSnap.data() as UserDocData | undefined;
       const authUser = auth().currentUser;
-      if (typeof data?.aiCredits !== "number") {
-        await docRef.set({ aiCredits: 5 }, { merge: true });
-        data = { ...(data ?? {}), aiCredits: 5 };
+      const defaults: Partial<UserDocData> = {};
+      if (typeof data?.aiCredits !== "number") defaults.aiCredits = 5;
+      if (!data?.currencySymbol) defaults.currencySymbol = "$";
+      if (Object.keys(defaults).length > 0) {
+        await docRef.set(defaults, { merge: true });
+        data = { ...(data ?? {}), ...defaults };
       }
       return {
         uid: data?.uid || authUser?.uid,
@@ -220,6 +226,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         image: data?.image || null,
         address: data?.address || undefined,
         phoneNumber: data?.phoneNumber || "",
+        currencySymbol: data?.currencySymbol || "$",
         aiCredits: data?.aiCredits,
       };
     } catch (error) {

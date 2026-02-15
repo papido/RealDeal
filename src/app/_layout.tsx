@@ -12,6 +12,7 @@ import { Alert, Text, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import mobileAds from "react-native-google-mobile-ads";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
+import { CurrencyProvider } from "../contexts/CurrencyProvider";
 import { IngredientsProvider, useIngredients } from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
 
@@ -119,13 +120,15 @@ const RootLayout = () => {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ActionSheetProvider>
           <BottomSheetModalProvider>
-            <CartProvider>
-              <IngredientsProvider>
-                <SplashProvider>
-                  <AppLayout />
-                </SplashProvider>
-              </IngredientsProvider>
-            </CartProvider>
+            <CurrencyProvider>
+              <CartProvider>
+                <IngredientsProvider>
+                  <SplashProvider>
+                    <AppLayout />
+                  </SplashProvider>
+                </IngredientsProvider>
+              </CartProvider>
+            </CurrencyProvider>
           </BottomSheetModalProvider>
         </ActionSheetProvider>
       </GestureHandlerRootView>

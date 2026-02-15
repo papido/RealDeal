@@ -2,11 +2,16 @@ import { firestore } from "@/config/firebase";
 import Button from "@/src/components/Button";
 import { useAuth } from "@/src/contexts/authProvider";
 import { useCart } from "@/src/contexts/CartProvider";
+import { useCurrency } from "@/src/contexts/CurrencyProvider";
+import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Alert,
+  Modal,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +22,7 @@ import {
 const ProfileScreen = () => {
   const { logout, user, updateUserData, setUser } = useAuth();
   const { getLocation, calculateDeliveryFromAddress } = useCart();
+  const { currencySymbol } = useCurrency();
   const [editingField, setEditingField] = useState<"username" | "email" | null>(
     null
   );
@@ -25,6 +31,14 @@ const ProfileScreen = () => {
     email: user?.email || "",
   });
   const [locationLoading, setLocationLoading] = useState(false);
+  const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    x: 0,
+    y: 0,
+    width: 76,
+    height: 38,
+  });
+  const currencyButtonRef = useRef<TouchableOpacity | null>(null);
 
   useEffect(() => {
     setForm({
@@ -32,6 +46,73 @@ const ProfileScreen = () => {
       email: user?.email || "",
     });
   }, [user?.username, user?.email]);
+
+  const currencyOptions = [
+    "$",
+    "A$",
+    "B$",
+    "Bds$",
+    "BZ$",
+    "C$",
+    "CFA",
+    "DKK",
+    "EC$",
+    "EUR",
+    "FJ$",
+    "G$",
+    "GHs",
+    "HK$",
+    "INR",
+    "J$",
+    "KES",
+    "KSh",
+    "L$",
+    "Le",
+    "MYR",
+    "N$",
+    "NGN",
+    "NOK",
+    "NZ$",
+    "P",
+    "PGK",
+    "PHP",
+    "PKR",
+    "R",
+    "RWF",
+    "SEK",
+    "S$",
+    "TT$",
+    "TZS",
+    "TSh",
+    "UGX",
+    "USh",
+    "ZK",
+    "ZMW",
+  ];
+
+  const selectedCurrency =
+    currencyOptions.find((option) => option === currencySymbol) || "$";
+
+  const updateCurrency = async (nextSymbol: string) => {
+    if (!user?.uid) return;
+    await firestore().collection("users").doc(user.uid).update({
+      currencySymbol: nextSymbol,
+    });
+    const updated = await updateUserData(user.uid);
+    setUser(updated);
+  };
+
+  const toggleCurrencyDropdown = () => {
+    if (currencyDropdownOpen) {
+      setCurrencyDropdownOpen(false);
+      return;
+    }
+
+    currencyButtonRef.current?.measureInWindow((x, y, width, height) => {
+      setDropdownPosition({ x, y, width, height });
+      setCurrencyDropdownOpen(true);
+    });
+  };
 
   const updateField = async (field: "username" | "email") => {
     if (!user?.uid) return;
@@ -157,6 +238,82 @@ const ProfileScreen = () => {
         </LinearGradient>
       </View>
 
+      <View style={styles.card}>
+        <LinearGradient
+          colors={["#fef3c7", "#fde68a"]}
+          style={styles.cardGradient}
+        >
+          <View style={styles.currencyHeaderRow}>
+            <Text style={[styles.label, styles.currencyLabel]}>Currency</Text>
+            <View style={styles.currencyDropdownAnchor}>
+              <TouchableOpacity
+                ref={currencyButtonRef}
+                style={styles.currencyDropdownButton}
+                onPress={toggleCurrencyDropdown}
+              >
+                <Text style={styles.currencyDropdownButtonText}>
+                  {selectedCurrency}
+                </Text>
+                <Ionicons
+                  name={currencyDropdownOpen ? "chevron-up" : "chevron-down"}
+                  size={16}
+                  color="#854d0e"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </LinearGradient>
+      </View>
+
+      <Modal
+        visible={currencyDropdownOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCurrencyDropdownOpen(false)}
+      >
+        <Pressable
+          style={styles.dropdownBackdrop}
+          onPress={() => setCurrencyDropdownOpen(false)}
+        />
+        <View
+          style={[
+            styles.currencyDropdownListWrap,
+            {
+              top: dropdownPosition.y + dropdownPosition.height + 6,
+              left: Math.max(12, dropdownPosition.x + dropdownPosition.width - 98),
+            },
+          ]}
+        >
+          <ScrollView style={styles.currencyDropdownList}>
+            {currencyOptions.map((option) => {
+              const isSelected = currencySymbol === option;
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.currencyDropdownItem,
+                    isSelected && styles.currencyDropdownItemSelected,
+                  ]}
+                  onPress={() => {
+                    updateCurrency(option);
+                    setCurrencyDropdownOpen(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.currencyDropdownItemText,
+                      isSelected && styles.currencyDropdownItemTextSelected,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+
       {/* Address Section (disabled for now) */}
       {/* <View style={styles.card}>
         <LinearGradient
@@ -250,6 +407,69 @@ const styles = StyleSheet.create({
   },
   disabled: {
     color: "#bbb",
+  },
+  currencyHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  currencyLabel: {
+    marginBottom: 0,
+  },
+  currencyDropdownAnchor: {
+    alignItems: "flex-end",
+  },
+  currencyDropdownButton: {
+    borderWidth: 1,
+    borderColor: "#a16207",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#fff7cc",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 76,
+  },
+  currencyDropdownButtonText: {
+    color: "#854d0e",
+    fontWeight: "600",
+    marginRight: 6,
+    textAlign: "center",
+  },
+  currencyDropdownListWrap: {
+    position: "absolute",
+    borderWidth: 1,
+    borderColor: "#a16207",
+    borderRadius: 10,
+    backgroundColor: "#fffdf0",
+    overflow: "hidden",
+    minWidth: 90,
+    zIndex: 30,
+    elevation: 30,
+  },
+  currencyDropdownList: {
+    maxHeight: 240,
+  },
+  currencyDropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  currencyDropdownItemSelected: {
+    backgroundColor: "#fde68a",
+  },
+  currencyDropdownItemText: {
+    color: "#0f172a",
+    fontSize: 13,
+  },
+  currencyDropdownItemTextSelected: {
+    color: "#854d0e",
+    fontWeight: "700",
+  },
+  dropdownBackdrop: {
+    ...StyleSheet.absoluteFillObject,
   },
   logoutBtn: {
     marginTop: 20,

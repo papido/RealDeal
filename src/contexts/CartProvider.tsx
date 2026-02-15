@@ -3,8 +3,8 @@ import { createContext, PropsWithChildren, useContext, useState } from "react";
 import { Alert } from "react-native";
 
 // Location and delivery constants
-const DELIVERY_RATE_PER_KM = 2.5; // RM 2.50 per km
-const BASE_DELIVERY_FEE = 0.0; // RM 0.00 base fee
+const DELIVERY_RATE_PER_KM = 2.5;
+const BASE_DELIVERY_FEE = 0.0;
 const MAX_DELIVERY_DISTANCE = 25; // km
 const STORE_LOCATION = {
   latitude: 3.0738, // Replace with your store's coordinates
@@ -161,7 +161,7 @@ const CartProvider = ({ children }: PropsWithChildren) => {
       setLocationError(null);
 
       console.log(
-        `Delivery calculated: ${info.distance.toFixed(2)}km, RM${info.fee.toFixed(2)}`
+        `Delivery calculated: ${info.distance.toFixed(2)}km, fee ${info.fee.toFixed(2)}`
       );
 
       if (!info.isWithinRange) {

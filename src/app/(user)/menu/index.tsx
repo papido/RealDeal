@@ -8,6 +8,7 @@ import {
 } from "@/src/constants/types";
 import { VOLUME_UNITS, VolumeUnit } from "@/src/constants/volumeUnits";
 import { useIngredients } from "@/src/contexts/IngredientsProvider";
+import { useCurrency } from "@/src/contexts/CurrencyProvider";
 import {
   convertIngredient,
   findIngredientKeyByName,
@@ -240,6 +241,7 @@ const MenuScreen = () => {
     auth().currentUser?.uid ?? null,
   );
   const { ingredients } = useIngredients();
+  const { formatCurrency, currencySymbol } = useCurrency();
   const router = useRouter();
   const navigation = useNavigation();
   const [savedTiles, setSavedTiles] = useState<SavedTile[]>([]);
@@ -1744,7 +1746,7 @@ const MenuScreen = () => {
                               : "";
                           const totalLabel = isMatch
                             ? !Number.isNaN(totalPrice)
-                              ? `RM ${totalPrice.toFixed(2)}`
+                              ? formatCurrency(totalPrice)
                               : ""
                             : "";
                           const conversionLabel = !Number.isNaN(toTasteAmount)
@@ -1907,8 +1909,8 @@ const MenuScreen = () => {
                               <Text style={styles.totalLabel}>Total</Text>
                               <Text style={styles.totalValue}>
                                 {totalSum > 0
-                                  ? `RM ${totalSum.toFixed(2)}`
-                                  : "RM -"}
+                                  ? formatCurrency(totalSum)
+                                  : `${currencySymbol}-`}
                               </Text>
                             </View>
                           ) : null}

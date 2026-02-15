@@ -4,6 +4,7 @@ import { Router } from "expo-router";
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { ProductType } from "../constants/types";
+import { useCurrency } from "../contexts/CurrencyProvider";
 
 export const defaultPizzaImage =
   "https://notjustdev-dummy.s3.us-east-2.amazonaws.com/food/default.png";
@@ -14,6 +15,7 @@ type ProductListItemProps = {
 };
 
 const ProductListItem = ({ product, router }: ProductListItemProps) => {
+  const { formatCurrency } = useCurrency();
   const handleNavigate = () => {
     router.push(`/(user)/menu/${product.id}`);
   };
@@ -33,7 +35,7 @@ const ProductListItem = ({ product, router }: ProductListItemProps) => {
         </Text>
 
         <View style={styles.footer}>
-          <Text style={styles.price}>RM {product.price}</Text>
+          <Text style={styles.price}>{formatCurrency(Number(product.price || 0))}</Text>
           <Ionicons name="chevron-forward" size={20} color="#999" />
         </View>
       </View>

@@ -1,32 +1,18 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useCart } from "../contexts/CartProvider";
 import { useAuth } from "../contexts/authProvider";
+import { useCart } from "../contexts/CartProvider";
+import { useCurrency } from "../contexts/CurrencyProvider";
 
-const DELIVERY_RATE_PER_KM = 2.5; // RM 2.50 per km
-// const BASE_DELIVERY_FEE = 0.0; // RM 0.00 base fee
-const MAX_DELIVERY_DISTANCE = 25; // km
+const DELIVERY_RATE_PER_KM = 2.5;
 
 const DeliveryPricing = () => {
   const { deliveryInfo } = useCart();
-
   const { user } = useAuth();
+  const { formatCurrency, currencySymbol } = useCurrency();
 
-  // // Debug effect to log current state
-  // useEffect(() => {
-  //   console.log("=== DeliveryPricing Debug Info ===");
-  //   console.log("User address:", user?.address);
-  //   console.log("Has deliveryInfo:", !!deliveryInfo);
-  //   console.log("DeliveryInfo:", deliveryInfo);
-  //   console.log("Current location:", location);
-  //   console.log("================================");
-  // }, [user?.address, deliveryInfo, location]);
-
-  // Always check if we need to calculate delivery
   const hasDeliveryInfo = !!deliveryInfo;
   const hasUserAddress = !!(user?.address && user.address.trim() !== "");
-
-  // Show delivery info if it exists
   const shouldShowDeliveryInfo = hasDeliveryInfo && deliveryInfo.isWithinRange;
 
   return (
@@ -35,24 +21,22 @@ const DeliveryPricing = () => {
         <View style={styles.deliveryInfo}>
           <Text style={styles.deliverySourceText}>
             {hasUserAddress
-              ? "📍 From saved address"
-              : "📍 From current location"}
+              ? "From saved address"
+              : "From current location"}
           </Text>
           <Text style={styles.deliveryText}>
             Distance: {deliveryInfo.distance.toFixed(2)} km
           </Text>
           <Text style={styles.deliveryText}>
-            Distance charge: RM
-            {(deliveryInfo.distance * DELIVERY_RATE_PER_KM).toFixed(2)} (
-            {deliveryInfo.distance.toFixed(2)} km × RM{DELIVERY_RATE_PER_KM})
+            Distance charge: {formatCurrency(deliveryInfo.distance * DELIVERY_RATE_PER_KM)} (
+            {deliveryInfo.distance.toFixed(2)} km x {currencySymbol}
+            {DELIVERY_RATE_PER_KM.toFixed(2)})
           </Text>
           <Text style={styles.deliveryTotal}>
-            Total delivery: RM{deliveryInfo.fee.toFixed(2)}
+            Total delivery: {formatCurrency(deliveryInfo.fee)}
           </Text>
         </View>
       )}
-
-      {/* Pricing Section intentionally omitted (no product cart UI). */}
     </>
   );
 };
