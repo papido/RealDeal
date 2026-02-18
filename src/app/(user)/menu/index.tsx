@@ -1,5 +1,6 @@
 ﻿import { auth, firestore } from "@/config/firebase";
 import ingredientsJson from "@/src/constants/ingredients.json";
+import { PLANNER_ITEMS_LIMIT } from "@/src/constants/limits";
 import { colors } from "@/src/constants/theme";
 import {
   Ingredient,
@@ -986,6 +987,13 @@ const MenuScreen = () => {
   }, [router, selectedTile]);
 
   const openPlannerModalForTile = useCallback((tile: PlannerSourceTile) => {
+    if (tile.items.length > PLANNER_ITEMS_LIMIT) {
+      Alert.alert(
+        "Planner limit reached",
+        `Only up to ${PLANNER_ITEMS_LIMIT} ingredients can be saved to planner entries.`,
+      );
+      return;
+    }
     setPlannerSourceTile(tile);
     setPlannerDateTime(new Date());
     setShowDatePicker(false);
@@ -1031,6 +1039,13 @@ const MenuScreen = () => {
 
   const handleSaveToPlanner = useCallback(async () => {
     if (!uid || !plannerSourceTile || plannerSaving) return;
+    if (plannerSourceTile.items.length > PLANNER_ITEMS_LIMIT) {
+      Alert.alert(
+        "Planner limit reached",
+        `You can only save up to ${PLANNER_ITEMS_LIMIT} ingredients per planner entry.`,
+      );
+      return;
+    }
 
     const recipeName =
       plannerSourceTile.recipeName?.trim() || "Saved Ingredients";

@@ -1,4 +1,5 @@
 import { createIngredients } from "@/src/services/ingredientsService";
+import { CART_ITEMS_LIMIT } from "@/src/constants/limits";
 import {
   convertIngredient,
   convertWeightFromBase,
@@ -19,6 +20,7 @@ import { IngredientsType } from "../constants/types";
 import Button from "./Button";
 import { useAuth } from "../contexts/authProvider";
 import { useCurrency } from "../contexts/CurrencyProvider";
+import { useIngredients } from "../contexts/IngredientsProvider";
 
 type ExpandableInputsProps = {
   editingIngredient?: IngredientsType | null;
@@ -36,6 +38,7 @@ const ExpandableInputs = ({
   const snapPoints = useMemo(() => ["55%"], []);
   const { user } = useAuth();
   const { currencySymbol } = useCurrency();
+  const { ingredients: cartIngredients } = useIngredients();
   const uid = user?.uid ?? "";
 
   const [ingredients, setIngredients] = useState<IngredientsType>({
@@ -144,6 +147,14 @@ const ExpandableInputs = ({
 
     if (!uid) {
       Alert.alert("Sign in required", "Please sign in to save ingredients.");
+      return;
+    }
+    const isEditingIngredient = Boolean(ingredients.id);
+    if (!isEditingIngredient && cartIngredients.length >= CART_ITEMS_LIMIT) {
+      Alert.alert(
+        "Cart limit reached",
+        `You can only save up to ${CART_ITEMS_LIMIT} cart ingredients.`,
+      );
       return;
     }
 
