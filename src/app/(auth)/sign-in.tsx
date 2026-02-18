@@ -51,6 +51,7 @@ const SignInScreen = () => {
 
     if (!res.success) {
       Alert.alert("Sign in", res.msg);
+      return;
     }
   };
 
@@ -138,7 +139,6 @@ const SignInScreen = () => {
               Don’t have an account ? Sign up here
             </Text>
           </TouchableOpacity>
-
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

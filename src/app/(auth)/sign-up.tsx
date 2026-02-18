@@ -46,8 +46,19 @@ const SignUpScreen = () => {
     setLoading(false);
     if (!res.success) {
       Alert.alert("Sign up", res.msg);
+      return;
     }
     resetFields();
+    Alert.alert(
+      "Email Verification",
+      "Account created successfully. Check your email for verification.",
+      [
+        {
+          text: "OK",
+          onPress: () => router.replace("/sign-in"),
+        },
+      ],
+    );
   };
 
   return (

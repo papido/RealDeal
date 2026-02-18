@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           currencySymbol: "$",
           lastSignedIn: firestore.FieldValue.serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
     } catch (error) {
       console.error("Google Sign-In Error:", error);
@@ -122,6 +122,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       setIsLoading(true);
       const response = await auth().signInWithEmailAndPassword(email, password);
+      const isVerified = response.user.emailVerified;
+
+      if (!isVerified) {
+        try {
+          await response.user.sendEmailVerification();
+        } catch (error) {
+          console.error("Failed to resend verification email:", error);
+        }
+        await auth().signOut();
+        return {
+          success: false,
+          msg: "Please verify your email before logging in. We sent a new verification email.",
+        };
+      }
 
       // Save user to Firestore
       const username = auth().currentUser?.displayName;
@@ -133,7 +147,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           currencySymbol: "$",
           lastSignedIn: firestore.FieldValue.serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
 
       console.log("Email login successful");
@@ -148,16 +162,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const register = async (
     email: string,
     password: string,
-    username: string
+    username: string,
   ) => {
     try {
       setIsLoading(true);
 
       const response = await auth().createUserWithEmailAndPassword(
         email,
-        password
+        password,
       );
       await response.user.updateProfile({ displayName: username });
+      await response.user.sendEmailVerification();
 
       return { success: true };
     } catch (error: any) {
@@ -239,7 +254,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       code === "auth/email-already-in-use" ||
       msg.includes("(auth/email-already-in-use)")
     )
-      return "An account with this email already exists. Please sign in.";
+      return "An account with this email already exists. Please sign in or verify in email.";
     if (code === "auth/weak-password" || msg.includes("(auth/weak-password)"))
       return "Password too weak";
     return "Authentication error";
