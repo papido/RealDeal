@@ -24,7 +24,7 @@ const Button = ({
   if (loading) {
     return (
       <View style={[styles.button, style, { backgroundColor: "transparent" }]}>
-        <Loading />
+        <Loading color={colors.green} />
       </View>
     );
   }
