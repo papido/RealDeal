@@ -123,14 +123,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       const response = await auth().signInWithEmailAndPassword(email, password);
 
-      if (!response.user.emailVerified) {
-        await auth().signOut(); // prevent unverified login
-        return {
-          success: false,
-          msg: "Please check your email and verify your email before signing in.",
-        };
-      }
-
       // Save user to Firestore
       const username = auth().currentUser?.displayName;
       await firestore().collection("users").doc(response.user.uid).set(
@@ -147,7 +139,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       console.log("Email login successful");
       return { success: true };
     } catch (error: any) {
-      return { success: false, msg: parseAuthError(error.message) };
+      return { success: false, msg: parseAuthError(error) };
     } finally {
       setIsLoading(false);
     }
@@ -167,20 +159,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       );
       await response.user.updateProfile({ displayName: username });
 
-      // Send verification email
-      await response.user.sendEmailVerification();
-
-      Alert.alert(
-        "Verify Your Email",
-        "We sent a verification email to your inbox. Please verify your email before signing in."
-      );
-
-      // Redirect to sign-in page manually
-      router.push("/(auth)/sign-in");
-
       return { success: true };
     } catch (error: any) {
-      return { success: false, msg: parseAuthError(error.message) };
+      return { success: false, msg: parseAuthError(error) };
     } finally {
       setIsLoading(false);
     }
@@ -235,16 +216,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const parseAuthError = (msg: string) => {
-    if (msg.includes("(auth/invalid-email)")) return "Invalid email";
-    if (msg.includes("(auth/invalid-credential)")) return "Wrong credentials";
-    if (msg.includes("(auth/user-not-found)")) return "User not found";
-    if (msg.includes("(auth/wrong-password)")) return "Wrong password";
-    if (msg.includes("(auth/too-many-requests)"))
+  const parseAuthError = (error: any) => {
+    const code = error?.code || "";
+    const msg = error?.message || "";
+    if (code === "auth/invalid-email" || msg.includes("(auth/invalid-email)"))
+      return "Invalid email";
+    if (
+      code === "auth/invalid-credential" ||
+      msg.includes("(auth/invalid-credential)")
+    )
+      return "Wrong credentials";
+    if (code === "auth/user-not-found" || msg.includes("(auth/user-not-found)"))
+      return "User not found";
+    if (code === "auth/wrong-password" || msg.includes("(auth/wrong-password)"))
+      return "Wrong password";
+    if (
+      code === "auth/too-many-requests" ||
+      msg.includes("(auth/too-many-requests)")
+    )
       return "Too many attempts. Try again later";
-    if (msg.includes("(auth/email-already-in-use)"))
-      return "Email already in use";
-    if (msg.includes("(auth/weak-password)")) return "Password too weak";
+    if (
+      code === "auth/email-already-in-use" ||
+      msg.includes("(auth/email-already-in-use)")
+    )
+      return "An account with this email already exists. Please sign in.";
+    if (code === "auth/weak-password" || msg.includes("(auth/weak-password)"))
+      return "Password too weak";
     return "Authentication error";
   };
 

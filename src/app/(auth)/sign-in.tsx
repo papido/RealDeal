@@ -1,4 +1,3 @@
-import { auth } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
 import { useAuth } from "@/src/contexts/authProvider";
 import { AntDesign, Feather } from "@expo/vector-icons";
@@ -25,8 +24,6 @@ const SignInScreen = () => {
   const [errors, setErrors] = useState("");
   const [loading, setLoading] = useState(false);
   const { login, signInWithGoogle } = useAuth();
-  const [showResend, setShowResend] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
 
   const validateInput = () => {
@@ -53,9 +50,6 @@ const SignInScreen = () => {
     setLoading(false);
 
     if (!res.success) {
-      if (res.msg?.includes("verify your email")) {
-        setShowResend(true);
-      }
       Alert.alert("Sign in", res.msg);
     }
   };
@@ -67,7 +61,14 @@ const SignInScreen = () => {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
-          <Stack.Screen options={{ title: "Sign in" }} />
+          <Stack.Screen
+            options={{
+              title: "Sign in",
+              headerBackVisible: false,
+              headerLeft: () => null,
+              gestureEnabled: false,
+            }}
+          />
 
           <Image
             source={require("@assets/images/iconImage.png")}
@@ -138,50 +139,6 @@ const SignInScreen = () => {
             </Text>
           </TouchableOpacity>
 
-          {showResend && (
-            <TouchableOpacity
-              disabled={cooldown > 0}
-              onPress={async () => {
-                try {
-                  const tempUser = await auth().signInWithEmailAndPassword(
-                    email.trim(),
-                    password.trim()
-                  );
-
-                  if (tempUser.user.emailVerified) {
-                    Alert.alert(
-                      "Already Verified",
-                      "Your email is already verified."
-                    );
-                  } else {
-                    await tempUser.user.sendEmailVerification();
-                    Alert.alert(
-                      "Verification Sent",
-                      "Check your email to verify your account."
-                    );
-                    setCooldown(60);
-                  }
-
-                  await auth().signOut();
-                  setShowResend(false);
-                } catch (error: any) {
-                  Alert.alert("Error", error.message);
-                }
-              }}
-              style={styles.resendButton}
-            >
-              <Text
-                style={[
-                  styles.resendButtonText,
-                  { color: cooldown > 0 ? "gray" : "black" },
-                ]}
-              >
-                {cooldown > 0
-                  ? `Resend available in ${cooldown}s`
-                  : "Resend Verification Email"}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

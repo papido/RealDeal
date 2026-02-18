@@ -19,13 +19,7 @@
       "bundleIdentifier": "com.fauzanafk.RealDeal",
       "buildNumber": "1",
       "deploymentTarget": "13.4",
-      "googleServicesFile": "./GoogleService-Info.plist",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby deals and listings.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby deals and listings.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for listings and profile pictures.",
-        "NSCameraUsageDescription": "This app uses the camera to take photos for listings and profile pictures."
-      }
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -35,13 +29,7 @@
       "edgeToEdgeEnabled": true,
       "package": "com.fauzanafk.RealDeal",
       "versionCode": 1,
-      "googleServicesFile": "./google-services.json",
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "READ_MEDIA_IMAGES",
-        "CAMERA"
-      ]
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -49,19 +37,7 @@
       "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-7187172609991034~6581539305"
-        }
-      ],
-      "expo-router",
-      [
-        "expo-notifications",
-        {
-          "icon": "./src/assets/images/iconImage.png"
-        }
-      ],
+      "@react-native-firebase/app",
       [
         "expo-build-properties",
         {
@@ -71,8 +47,23 @@
             "buildToolsVersion": "35.0.0"
           },
           "ios": {
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "15.1",
+            "useFrameworks": "static"
           }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-7187172609991034~6581539305",
+          "iosAppId": "ca-app-pub-7187172609991034~5495514305"
+        }
+      ],
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./src/assets/images/iconImage.png"
         }
       ]
     ],

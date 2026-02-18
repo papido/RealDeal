@@ -1,6 +1,7 @@
 import { auth, firestore } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
 import { ParsedIngredient } from "@/src/constants/types";
+import SwipeToDelete from "@/src/components/SwipeToDelete";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -88,6 +89,20 @@ const PlannerScreen = () => {
     });
   }, [entries]);
 
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!uid) return;
+    try {
+      await firestore()
+        .collection("users")
+        .doc(uid)
+        .collection("plannerEntries")
+        .doc(entryId)
+        .delete();
+    } catch (error) {
+      console.error("Error deleting planner entry:", error);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -98,19 +113,29 @@ const PlannerScreen = () => {
 
   if (!uid) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>Please sign in to view planner.</Text>
-      </View>
+      <LinearGradient
+        colors={["#0b1f16", "#0f2a1c", "#122f21"]}
+        style={styles.page}
+      >
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>Please sign in to view planner.</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   if (sortedEntries.length === 0) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>
-          No planner entries yet. Long press a recipe name in Menu to add one.
-        </Text>
-      </View>
+      <LinearGradient
+        colors={["#0b1f16", "#0f2a1c", "#122f21"]}
+        style={styles.page}
+      >
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>
+            No planner entries yet. Long press a recipe name in Menu to add one.
+          </Text>
+        </View>
+      </LinearGradient>
     );
   }
 
@@ -128,73 +153,79 @@ const PlannerScreen = () => {
           const isExpanded = !!expandedIds[item.id];
 
           return (
-            <Pressable
-              onPress={() =>
-                setExpandedIds((prev) => ({
-                  ...prev,
-                  [item.id]: !prev[item.id],
-                }))
-              }
-              style={styles.cardPressable}
-              accessibilityRole="button"
-              accessibilityLabel="Toggle planned recipe ingredients"
-            >
-              <LinearGradient
-                colors={["#fef3c7", "#fde68a"]}
-                style={styles.card}
+            <SwipeToDelete onDelete={() => handleDeleteEntry(item.id)}>
+              <Pressable
+                onPress={() =>
+                  setExpandedIds((prev) => ({
+                    ...prev,
+                    [item.id]: !prev[item.id],
+                  }))
+                }
+                style={styles.cardPressable}
+                accessibilityRole="button"
+                accessibilityLabel="Toggle planned recipe ingredients"
               >
-              <View style={styles.dateRow}>
-                <View style={styles.datePill}>
-                  <Text style={styles.datePillText}>
-                    {plannedDate
-                      ? `${plannedDate.toLocaleDateString()}`
-                      : "Date TBD"}
-                  </Text>
-                </View>
-                <View style={styles.timePill}>
-                  <Text style={styles.timePillText}>
-                    {plannedDate
-                      ? plannedDate.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "-- : --"}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.recipePressable}>
-                <Text style={styles.recipeName}>
-                  {item.recipeName?.trim() || "Saved Ingredients"}
-                </Text>
-                <Text style={styles.viewHint}>
-                  {isExpanded ? "Hide ingredients" : "Show ingredients"}
-                </Text>
-              </View>
-
-              {isExpanded ? (
-                <View style={styles.ingredientsWrap}>
-                  {(item.items ?? []).map((entry, index) => {
-                    const quantity =
-                      entry.quantity !== null && entry.quantity !== undefined
-                        ? `${entry.quantity}`
-                        : "";
-                    const unit = entry.unit ?? "";
-                    const ingredient =
-                      entry.ingredient ?? "Unnamed ingredient";
-
-                    return (
-                      <Text
-                        key={`${item.id}-${index}`}
-                        style={styles.ingredientText}
-                      >
-                        - {[quantity, unit, ingredient].filter(Boolean).join(" ")}
+                <LinearGradient
+                  colors={["#fef3c7", "#fde68a"]}
+                  style={styles.card}
+                >
+                  <View style={styles.dateRow}>
+                    <View style={styles.datePill}>
+                      <Text style={styles.datePillText}>
+                        {plannedDate
+                          ? `${plannedDate.toLocaleDateString()}`
+                          : "Date TBD"}
                       </Text>
-                    );
-                  })}
-                </View>
-              ) : null}
-              </LinearGradient>
-            </Pressable>
+                    </View>
+                    <View style={styles.timePill}>
+                      <Text style={styles.timePillText}>
+                        {plannedDate
+                          ? plannedDate.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-- : --"}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.recipePressable}>
+                    <Text style={styles.recipeName}>
+                      {item.recipeName?.trim() || "Saved Ingredients"}
+                    </Text>
+                    <Text style={styles.viewHint}>
+                      {isExpanded ? "Hide ingredients" : "Show ingredients"}
+                    </Text>
+                  </View>
+
+                  {isExpanded ? (
+                    <View style={styles.ingredientsWrap}>
+                      {(item.items ?? []).map((entry, index) => {
+                        const quantity =
+                          entry.quantity !== null &&
+                          entry.quantity !== undefined
+                            ? `${entry.quantity}`
+                            : "";
+                        const unit = entry.unit ?? "";
+                        const ingredient =
+                          entry.ingredient ?? "Unnamed ingredient";
+
+                        return (
+                          <Text
+                            key={`${item.id}-${index}`}
+                            style={styles.ingredientText}
+                          >
+                            -{" "}
+                            {[quantity, unit, ingredient]
+                              .filter(Boolean)
+                              .join(" ")}
+                          </Text>
+                        );
+                      })}
+                    </View>
+                  ) : null}
+                </LinearGradient>
+              </Pressable>
+            </SwipeToDelete>
           );
         }}
       />
@@ -220,7 +251,6 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   cardPressable: {
-    marginBottom: 16,
     borderRadius: 20,
   },
   dateRow: {
@@ -281,11 +311,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
-    backgroundColor: "#0f172a",
+    backgroundColor: "transparent",
   },
   emptyText: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.7)",
+    color: "#e2e8f0",
     fontSize: 15,
   },
 });

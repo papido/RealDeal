@@ -1,6 +1,7 @@
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import React, { useState } from "react";
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,8 +12,8 @@ import ExpandableInputs from "../components/ExpandableInputs";
 import IngredientsListItem from "../components/IngredientsListItem";
 import SwipeToDelete from "../components/SwipeToDelete";
 import { IngredientsType } from "../constants/types";
-import { useIngredients } from "../contexts/IngredientsProvider";
 import { useCurrency } from "../contexts/CurrencyProvider";
+import { useIngredients } from "../contexts/IngredientsProvider";
 const CartScreen = () => {
   const { ingredients, removeIngredient } = useIngredients();
   const { formatCurrency } = useCurrency();
@@ -33,21 +34,29 @@ const CartScreen = () => {
             <>
               {/* All Cart Items */}
               <View style={styles.cartList}>
-                {ingredients.map((item) => (
-                  <SwipeToDelete
+                {ingredients.map((item, index) => (
+                  <View
                     key={item.id}
-                    onDelete={() => removeIngredient(item.id!)}
+                    style={
+                      Platform.OS === "ios" && index === 0
+                        ? styles.firstCartItem
+                        : null
+                    }
                   >
-                    <TouchableOpacity
-                      activeOpacity={0.9}
-                      onLongPress={() =>
-                        setEditingIngredient({ ...(item as IngredientsType) })
-                      }
-                      delayLongPress={300}
+                    <SwipeToDelete
+                      onDelete={() => removeIngredient(item.id!)}
                     >
-                      <IngredientsListItem ingredientsItem={item} />
-                    </TouchableOpacity>
-                  </SwipeToDelete>
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onLongPress={() =>
+                          setEditingIngredient({ ...(item as IngredientsType) })
+                        }
+                        delayLongPress={300}
+                      >
+                        <IngredientsListItem ingredientsItem={item} />
+                      </TouchableOpacity>
+                    </SwipeToDelete>
+                  </View>
                 ))}
               </View>
 
@@ -101,6 +110,9 @@ const styles = StyleSheet.create({
   },
   cartList: {
     paddingTop: 4,
+  },
+  firstCartItem: {
+    marginTop: 18,
   },
   emptyCartText: {
     textAlign: "center",

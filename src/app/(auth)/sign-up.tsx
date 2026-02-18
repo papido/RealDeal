@@ -1,5 +1,6 @@
 import { colors } from "@/src/constants/theme";
 import { useAuth } from "@/src/contexts/authProvider";
+import Icon from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -57,6 +58,15 @@ const SignUpScreen = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <Stack.Screen options={{ title: "Sign up" }} />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Icon name="chevron-back" size={22} color={colors.black} />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>
             Let’s get started with your journey.
@@ -154,6 +164,21 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     color: colors.black,
+    fontWeight: "600",
+  },
+  backButton: {
+    position: "absolute",
+    top: 70,
+    left: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  backText: {
+    marginLeft: 4,
+    color: colors.black,
+    fontSize: 15,
     fontWeight: "600",
   },
 });

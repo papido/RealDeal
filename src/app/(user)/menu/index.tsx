@@ -1418,7 +1418,9 @@ const MenuScreen = () => {
           Please sign in to view saved ingredients.
         </Text>
       ) : savedTiles.length === 0 ? (
-        <Text style={styles.emptyText}>No saved ingredients yet.</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No saved ingredients yet.</Text>
+        </View>
       ) : filteredTiles.length === 0 ? (
         <Text style={styles.emptyText}>No matching ingredients.</Text>
       ) : (
@@ -2090,6 +2092,11 @@ const styles = StyleSheet.create({
     marginTop: 50,
     fontSize: 16,
     color: "#e2e8f0",
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   selectionSection: {
     paddingHorizontal: 16,

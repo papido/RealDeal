@@ -64,17 +64,16 @@ export default SwipeToDelete;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginVertical: 5,
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: "hidden",
   },
   deleteBackground: {
     backgroundColor: "#ff3b30",
     position: "absolute",
-    right: 0,
-    left: 0,
-    height: "100%",
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "flex-end",
-    borderRadius: 8,
   },
   deleteButton: {
     width: 100,
