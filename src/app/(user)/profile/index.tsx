@@ -1,10 +1,9 @@
 import { firestore } from "@/config/firebase";
 import Button from "@/src/components/Button";
 import { useAuth } from "@/src/contexts/authProvider";
-import { useCart } from "@/src/contexts/CartProvider";
 import { useCurrency } from "@/src/contexts/CurrencyProvider";
 import { Ionicons } from "@expo/vector-icons";
-import * as Location from "expo-location";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -20,8 +19,8 @@ import {
 } from "react-native";
 
 const ProfileScreen = () => {
-  const { logout, user, updateUserData, setUser } = useAuth();
-  const { getLocation, calculateDeliveryFromAddress } = useCart();
+  const { logout, deleteAccount, user, updateUserData, setUser } = useAuth();
+  const router = useRouter();
   const { currencySymbol } = useCurrency();
   const [editingField, setEditingField] = useState<"username" | "email" | null>(
     null
@@ -30,8 +29,8 @@ const ProfileScreen = () => {
     username: user?.username || "",
     email: user?.email || "",
   });
-  const [locationLoading, setLocationLoading] = useState(false);
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
     x: 0,
     y: 0,
@@ -132,41 +131,29 @@ const ProfileScreen = () => {
     setEditingField(field);
   };
 
-  const updateAddressAndDelivery = async () => {
-    setLocationLoading(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission denied", "Cannot access your location.");
-        setLocationLoading(false);
-        return;
-      }
-
-      const location = await getLocation();
-      const [address] = await Location.reverseGeocodeAsync(location.coords);
-      const fullAddress = `${address.name}, ${address.street}, ${address.postalCode}, ${address.city}, ${address.region}`;
-
-      await firestore().collection("users").doc(user?.uid).update({
-        address: fullAddress,
-      });
-
-      const updated = await updateUserData(user?.uid!);
-      setUser(updated);
-
-      let message = "Address updated!";
-      try {
-        await calculateDeliveryFromAddress(fullAddress);
-        message += " Delivery calculated for your address.";
-      } catch {
-        message += " But delivery rate calculation failed.";
-      }
-
-      Alert.alert("Success", message);
-    } catch (err) {
-      console.error("Location error", err);
-      Alert.alert("Error", "Failed to get address.");
-    }
-    setLocationLoading(false);
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently removes your account and profile data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsDeletingAccount(true);
+              const result = await deleteAccount();
+              if (!result.success) {
+                Alert.alert("Delete failed", result.msg || "Unable to delete account.");
+              }
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -342,8 +329,25 @@ const ProfileScreen = () => {
       </View> */}
 
       {/* Logout */}
+      <TouchableOpacity
+        style={styles.policyBtn}
+        onPress={() => router.push("/(user)/profile/privacy-policy")}
+      >
+        <Text style={styles.policyText}>Privacy Policy</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Sign Out</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.deleteBtn, isDeletingAccount && styles.deleteBtnDisabled]}
+        onPress={handleDeleteAccount}
+        disabled={isDeletingAccount}
+      >
+        <Text style={styles.deleteText}>
+          {isDeletingAccount ? "Deleting Account..." : "Delete Account"}
+        </Text>
       </TouchableOpacity>
     </LinearGradient>
   );
@@ -471,8 +475,22 @@ const styles = StyleSheet.create({
   dropdownBackdrop: {
     ...StyleSheet.absoluteFillObject,
   },
+  policyBtn: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: "#bae6fd",
+    backgroundColor: "rgba(2, 132, 199, 0.22)",
+    padding: 14,
+    borderRadius: 10,
+  },
+  policyText: {
+    textAlign: "center",
+    color: "#e0f2fe",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
   logoutBtn: {
-    marginTop: 20,
+    marginTop: 12,
     backgroundColor: "#f44336",
     padding: 14,
     borderRadius: 10,
@@ -480,6 +498,23 @@ const styles = StyleSheet.create({
   logoutText: {
     textAlign: "center",
     color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  deleteBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    backgroundColor: "rgba(127, 29, 29, 0.22)",
+    padding: 14,
+    borderRadius: 10,
+  },
+  deleteBtnDisabled: {
+    opacity: 0.65,
+  },
+  deleteText: {
+    textAlign: "center",
+    color: "#fee2e2",
     fontWeight: "bold",
     fontSize: 16,
   },

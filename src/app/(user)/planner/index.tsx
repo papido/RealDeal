@@ -5,18 +5,25 @@ import SwipeToDelete from "@/src/components/SwipeToDelete";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import { WebView } from "react-native-webview";
 
 type PlannerEntry = {
   id: string;
   recipeId?: string;
   recipeName?: string;
+  recipeWebsite?: string;
   items?: ParsedIngredient[];
   plannedFor?: any;
   createdAt?: any;
@@ -36,7 +43,11 @@ const PlannerScreen = () => {
   const [uid, setUid] = useState<string | null>(auth().currentUser?.uid ?? null);
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<PlannerEntry[]>([]);
-  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
+  const [showWebsitePrompt, setShowWebsitePrompt] = useState(false);
+  const [websiteInput, setWebsiteInput] = useState("");
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [savingWebsite, setSavingWebsite] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -58,7 +69,7 @@ const PlannerScreen = () => {
       .collection("users")
       .doc(uid)
       .collection("plannerEntries")
-      .orderBy("plannedFor", "asc")
+      .orderBy("plannedFor", "desc")
       .onSnapshot(
         (snapshot) => {
           const nextEntries = snapshot.docs.map((doc) => {
@@ -85,7 +96,7 @@ const PlannerScreen = () => {
     return [...entries].sort((a, b) => {
       const aTime = toDate(a.plannedFor)?.getTime() ?? 0;
       const bTime = toDate(b.plannedFor)?.getTime() ?? 0;
-      return aTime - bTime;
+      return bTime - aTime;
     });
   }, [entries]);
 
@@ -100,6 +111,62 @@ const PlannerScreen = () => {
         .delete();
     } catch (error) {
       console.error("Error deleting planner entry:", error);
+    }
+  };
+
+  const normalizeWebsiteUrl = (rawValue: string): string | null => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) return null;
+    const candidate = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+    return /^https?:\/\/\S+$/i.test(candidate) ? candidate : null;
+  };
+
+  const handleOpenWebsite = (entry: PlannerEntry) => {
+    const savedUrl = entry.recipeWebsite?.trim();
+    if (savedUrl) {
+      setWebsiteUrl(savedUrl);
+      return;
+    }
+
+    setSelectedEntryId(entry.id);
+    setWebsiteInput("");
+    setShowWebsitePrompt(true);
+  };
+
+  const handleSaveWebsite = async () => {
+    if (!uid || !selectedEntryId || savingWebsite) return;
+    const normalizedUrl = normalizeWebsiteUrl(websiteInput);
+    if (!normalizedUrl) {
+      Alert.alert("Invalid website", "Please enter a valid website URL.");
+      return;
+    }
+
+    try {
+      setSavingWebsite(true);
+      await firestore()
+        .collection("users")
+        .doc(uid)
+        .collection("plannerEntries")
+        .doc(selectedEntryId)
+        .set(
+          {
+            recipeWebsite: normalizedUrl,
+            updatedAt: firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+
+      setShowWebsitePrompt(false);
+      setSelectedEntryId(null);
+      setWebsiteInput("");
+      setWebsiteUrl(normalizedUrl);
+    } catch (error) {
+      console.error("Error saving recipe website:", error);
+      Alert.alert("Failed to save", "Please try again.");
+    } finally {
+      setSavingWebsite(false);
     }
   };
 
@@ -150,20 +217,14 @@ const PlannerScreen = () => {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const plannedDate = toDate(item.plannedFor);
-          const isExpanded = !!expandedIds[item.id];
 
           return (
             <SwipeToDelete onDelete={() => handleDeleteEntry(item.id)}>
               <Pressable
-                onPress={() =>
-                  setExpandedIds((prev) => ({
-                    ...prev,
-                    [item.id]: !prev[item.id],
-                  }))
-                }
+                onPress={() => handleOpenWebsite(item)}
                 style={styles.cardPressable}
                 accessibilityRole="button"
-                accessibilityLabel="Toggle planned recipe ingredients"
+                accessibilityLabel="Open recipe website"
               >
                 <LinearGradient
                   colors={["#fef3c7", "#fde68a"]}
@@ -192,43 +253,84 @@ const PlannerScreen = () => {
                     <Text style={styles.recipeName}>
                       {item.recipeName?.trim() || "Saved Ingredients"}
                     </Text>
-                    <Text style={styles.viewHint}>
-                      {isExpanded ? "Hide ingredients" : "Show ingredients"}
-                    </Text>
+                    <Text style={styles.viewHint}>Tap to open website</Text>
                   </View>
-
-                  {isExpanded ? (
-                    <View style={styles.ingredientsWrap}>
-                      {(item.items ?? []).map((entry, index) => {
-                        const quantity =
-                          entry.quantity !== null &&
-                          entry.quantity !== undefined
-                            ? `${entry.quantity}`
-                            : "";
-                        const unit = entry.unit ?? "";
-                        const ingredient =
-                          entry.ingredient ?? "Unnamed ingredient";
-
-                        return (
-                          <Text
-                            key={`${item.id}-${index}`}
-                            style={styles.ingredientText}
-                          >
-                            -{" "}
-                            {[quantity, unit, ingredient]
-                              .filter(Boolean)
-                              .join(" ")}
-                          </Text>
-                        );
-                      })}
-                    </View>
-                  ) : null}
                 </LinearGradient>
               </Pressable>
             </SwipeToDelete>
           );
         }}
       />
+      {websiteUrl ? (
+        <View style={styles.websiteOverlay}>
+          <View style={styles.websiteHeader}>
+            <Text style={styles.websiteTitle}>Recipe website</Text>
+            <Pressable
+              onPress={() => setWebsiteUrl(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Close website"
+            >
+              <Ionicons name="close" size={20} color="#111827" />
+            </Pressable>
+          </View>
+          <WebView source={{ uri: websiteUrl }} />
+        </View>
+      ) : null}
+
+      <Modal
+        visible={showWebsitePrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!savingWebsite) {
+            setShowWebsitePrompt(false);
+            setSelectedEntryId(null);
+            setWebsiteInput("");
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add recipe website</Text>
+            <Text style={styles.modalSubtitle}>
+              Add the recipe URL for this planner card.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="https://example.com/recipe"
+              placeholderTextColor="#9ca3af"
+              value={websiteInput}
+              onChangeText={setWebsiteInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowWebsitePrompt(false);
+                  setSelectedEntryId(null);
+                  setWebsiteInput("");
+                }}
+                style={[styles.modalButton, styles.modalCancelButton]}
+                disabled={savingWebsite}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveWebsite}
+                style={[styles.modalButton, styles.modalSaveButton]}
+                disabled={savingWebsite}
+              >
+                <Text style={styles.modalSaveText}>
+                  {savingWebsite ? "Saving..." : "Save"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -295,17 +397,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  ingredientsWrap: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(17,24,39,0.1)",
-    paddingTop: 12,
-    gap: 6,
-  },
-  ingredientText: {
-    fontSize: 14,
-    color: "#1e293b",
-  },
   centered: {
     flex: 1,
     alignItems: "center",
@@ -317,5 +408,80 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#e2e8f0",
     fontSize: 15,
+  },
+  websiteOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#fff",
+    zIndex: 100,
+  },
+  websiteHeader: {
+    height: 56,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  websiteTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    backgroundColor: "#111827",
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#f8fafc",
+  },
+  modalSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#cbd5f5",
+  },
+  modalInput: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#374151",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    color: "#f8fafc",
+    backgroundColor: "#1f2937",
+  },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  modalButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalCancelButton: {
+    marginRight: 10,
+    backgroundColor: "#374151",
+  },
+  modalSaveButton: {
+    backgroundColor: "#1a73e8",
+  },
+  modalCancelText: {
+    color: "#f8fafc",
+    fontWeight: "600",
+  },
+  modalSaveText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

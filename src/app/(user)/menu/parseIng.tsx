@@ -1,6 +1,6 @@
-﻿import { auth, firestore } from "@/config/firebase";
+import { auth, firestore } from "@/config/firebase";
 import Button from "@/src/components/Button";
-import { RECIPE_INGREDIENTS_LIMIT } from "@/src/constants/limits";
+import { SAVED_RECIPES_LIMIT } from "@/src/constants/limits";
 import { ParsedIngredient } from "@/src/constants/types";
 import { parseENLine } from "@/src/utils/enParser";
 import { Ionicons } from "@expo/vector-icons";
@@ -125,15 +125,7 @@ export default function IngredientParser(): JSX.Element {
 
   const handleParse = (): void => {
     const parsed = lines.map((line) => parseENLine(line) as ParsedIngredient);
-    if (parsed.length > RECIPE_INGREDIENTS_LIMIT) {
-      Alert.alert(
-        "Ingredient limit reached",
-        `Only the first ${RECIPE_INGREDIENTS_LIMIT} ingredients were kept.`,
-      );
-      setParsedIngredients(parsed.slice(0, RECIPE_INGREDIENTS_LIMIT));
-    } else {
-      setParsedIngredients(parsed);
-    }
+    setParsedIngredients(parsed);
     setEditingIndex(null);
     setDraftIngredient("");
     setEditAllMode(true);
@@ -187,16 +179,10 @@ export default function IngredientParser(): JSX.Element {
   };
 
   const handleAddIngredient = (): void => {
-    setParsedIngredients((prev) => {
-      if (prev.length >= RECIPE_INGREDIENTS_LIMIT) {
-        Alert.alert(
-          "Ingredient limit reached",
-          `You can only keep up to ${RECIPE_INGREDIENTS_LIMIT} ingredients per recipe.`,
-        );
-        return prev;
-      }
-      return [...prev, { quantity: "", unit: "", ingredient: "" }];
-    });
+    setParsedIngredients((prev) => [
+      ...prev,
+      { quantity: "", unit: "", ingredient: "" },
+    ]);
     setEditAllMode(true);
     setEditingIndex(null);
     setDraftIngredient("");
@@ -230,14 +216,6 @@ export default function IngredientParser(): JSX.Element {
     recipeNameValue: string,
   ): Promise<boolean> => {
     if (!cleanIngredients.length || saving) return false;
-    if (cleanIngredients.length > RECIPE_INGREDIENTS_LIMIT) {
-      Alert.alert(
-        "Ingredient limit reached",
-        `You can only save up to ${RECIPE_INGREDIENTS_LIMIT} ingredients per recipe.`,
-      );
-      return false;
-    }
-
     const uid = auth().currentUser?.uid ?? null;
     if (!uid) {
       console.error("Cannot save ingredients without a signed-in user.");
@@ -250,6 +228,17 @@ export default function IngredientParser(): JSX.Element {
         .collection("users")
         .doc(uid)
         .collection("parsedIngredients");
+
+      if (!tileId) {
+        const existingRecipes = await collection.limit(SAVED_RECIPES_LIMIT).get();
+        if (existingRecipes.size >= SAVED_RECIPES_LIMIT) {
+          Alert.alert(
+            "Saved recipe limit reached",
+            `You can save up to ${SAVED_RECIPES_LIMIT} recipes.`,
+          );
+          return false;
+        }
+      }
 
       const docRef = tileId ? collection.doc(tileId) : collection.doc();
       await docRef.set(
@@ -1017,3 +1006,4 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
 });
+

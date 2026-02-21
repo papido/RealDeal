@@ -1,6 +1,6 @@
-﻿import { auth, firestore } from "@/config/firebase";
+import { auth, firestore } from "@/config/firebase";
 import ingredientsJson from "@/src/constants/ingredients.json";
-import { PLANNER_ITEMS_LIMIT } from "@/src/constants/limits";
+import { PLANNER_CARDS_LIMIT } from "@/src/constants/limits";
 import { colors } from "@/src/constants/theme";
 import {
   Ingredient,
@@ -986,20 +986,34 @@ const MenuScreen = () => {
     });
   }, [router, selectedTile]);
 
-  const openPlannerModalForTile = useCallback((tile: PlannerSourceTile) => {
-    if (tile.items.length > PLANNER_ITEMS_LIMIT) {
-      Alert.alert(
-        "Planner limit reached",
-        `Only up to ${PLANNER_ITEMS_LIMIT} ingredients can be saved to planner entries.`,
-      );
+  const openPlannerModalForTile = useCallback(async (tile: PlannerSourceTile) => {
+    if (!uid) return;
+    try {
+      const existingEntries = await firestore()
+        .collection("users")
+        .doc(uid)
+        .collection("plannerEntries")
+        .limit(PLANNER_CARDS_LIMIT)
+        .get();
+      if (existingEntries.size >= PLANNER_CARDS_LIMIT) {
+        Alert.alert(
+          "Planner limit reached",
+          `You can save up to ${PLANNER_CARDS_LIMIT} planner cards.`,
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking planner limit:", error);
+      Alert.alert("Failed to open planner", "Please try again.");
       return;
     }
+
     setPlannerSourceTile(tile);
     setPlannerDateTime(new Date());
     setShowDatePicker(false);
     setShowTimePicker(false);
     setShowPlannerModal(true);
-  }, []);
+  }, [uid]);
 
   const handleDateChange = useCallback(
     (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -1039,24 +1053,29 @@ const MenuScreen = () => {
 
   const handleSaveToPlanner = useCallback(async () => {
     if (!uid || !plannerSourceTile || plannerSaving) return;
-    if (plannerSourceTile.items.length > PLANNER_ITEMS_LIMIT) {
-      Alert.alert(
-        "Planner limit reached",
-        `You can only save up to ${PLANNER_ITEMS_LIMIT} ingredients per planner entry.`,
-      );
-      return;
-    }
 
     const recipeName =
       plannerSourceTile.recipeName?.trim() || "Saved Ingredients";
 
     try {
       setPlannerSaving(true);
-      await firestore()
+      const plannerCollection = firestore()
         .collection("users")
         .doc(uid)
-        .collection("plannerEntries")
-        .add({
+        .collection("plannerEntries");
+
+      const existingEntries = await plannerCollection
+        .limit(PLANNER_CARDS_LIMIT)
+        .get();
+      if (existingEntries.size >= PLANNER_CARDS_LIMIT) {
+        Alert.alert(
+          "Planner limit reached",
+          `You can save up to ${PLANNER_CARDS_LIMIT} planner cards.`,
+        );
+        return;
+      }
+
+      await plannerCollection.add({
           recipeId: plannerSourceTile.id,
           recipeName,
           items: plannerSourceTile.items,

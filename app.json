@@ -29,7 +29,12 @@
       "edgeToEdgeEnabled": true,
       "package": "com.fauzanafk.RealDeal",
       "versionCode": 1,
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "blockedPermissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -59,13 +64,7 @@
           "iosAppId": "ca-app-pub-7187172609991034~5495514305"
         }
       ],
-      "expo-router",
-      [
-        "expo-notifications",
-        {
-          "icon": "./src/assets/images/iconImage.png"
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true,

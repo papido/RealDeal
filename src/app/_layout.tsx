@@ -4,7 +4,6 @@ import { FontAwesome, SimpleLineIcons } from "@expo/vector-icons";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import "config/firebase.ts";
 import * as Font from "expo-font";
-import * as Notifications from "expo-notifications";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
@@ -15,15 +14,6 @@ import { AuthProvider, useAuth } from "../contexts/authProvider";
 import { CurrencyProvider } from "../contexts/CurrencyProvider";
 import { IngredientsProvider, useIngredients } from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
 
 //Prevent splash screen from hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();

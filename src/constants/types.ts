@@ -115,6 +115,7 @@ export interface AuthContextType {
     username: string
   ) => Promise<{ success: boolean; msg?: string }>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; msg?: string }>;
   updateUserData: (uid: string) => Promise<UserType | null>;
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;

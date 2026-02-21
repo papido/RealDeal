@@ -12,6 +12,10 @@ export default function ProfileStack() {
       }}
     >
       <Stack.Screen name="index" options={{ title: "Profile" }} />
+      <Stack.Screen
+        name="privacy-policy"
+        options={{ title: "Privacy Policy" }}
+      />
     </Stack>
   );
 }

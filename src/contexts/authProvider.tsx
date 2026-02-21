@@ -192,6 +192,74 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const deleteAccount = async (): Promise<{ success: boolean; msg?: string }> => {
+    try {
+      setIsLoading(true);
+      const currentUser = auth().currentUser;
+      if (!currentUser) {
+        return { success: false, msg: "No authenticated user found" };
+      }
+
+      const uid = currentUser.uid;
+      const userDocRef = firestore().collection("users").doc(uid);
+
+      const deleteCollectionDocs = async (collectionPath: string) => {
+        const snapshot = await userDocRef.collection(collectionPath).get();
+        if (snapshot.empty) return;
+        let batch = firestore().batch();
+        let opCount = 0;
+        for (const doc of snapshot.docs) {
+          batch.delete(doc.ref);
+          opCount += 1;
+          if (opCount === 450) {
+            await batch.commit();
+            batch = firestore().batch();
+            opCount = 0;
+          }
+        }
+        if (opCount > 0) {
+          await batch.commit();
+        }
+      };
+
+      try {
+        await deleteCollectionDocs("parsedIngredients");
+        await deleteCollectionDocs("plannerEntries");
+        await deleteCollectionDocs("cart");
+        await userDocRef.delete();
+      } catch (cleanupError) {
+        console.error("Failed to delete Firestore user data:", cleanupError);
+        return {
+          success: false,
+          msg: "Could not delete account data. Please try again.",
+        };
+      }
+
+      await currentUser.delete();
+
+      try {
+        await GoogleSignin.signOut();
+      } catch (googleError) {
+        console.warn("Google sign-out after account deletion failed:", googleError);
+      }
+
+      setUser(null);
+      router.replace("/(auth)/sign-in");
+      return { success: true };
+    } catch (error: any) {
+      const code = error?.code || "";
+      if (code === "auth/requires-recent-login") {
+        return {
+          success: false,
+          msg: "Please sign in again, then try deleting your account.",
+        };
+      }
+      return { success: false, msg: parseAuthError(error) };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateUserData = async (uid: string): Promise<UserType | null> => {
     try {
       const docRef = firestore().collection("users").doc(uid);
@@ -265,6 +333,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser,
     login,
     logout,
+    deleteAccount,
     register,
     updateUserData,
     isLoading,
