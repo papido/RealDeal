@@ -2,6 +2,7 @@ import { auth, firestore } from "@/config/firebase";
 import { colors } from "@/src/constants/theme";
 import { ParsedIngredient } from "@/src/constants/types";
 import SwipeToDelete from "@/src/components/SwipeToDelete";
+import { useCurrency } from "@/src/contexts/CurrencyProvider";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,6 +26,7 @@ type PlannerEntry = {
   recipeName?: string;
   recipeWebsite?: string;
   items?: ParsedIngredient[];
+  totalPrice?: number;
   plannedFor?: any;
   createdAt?: any;
 };
@@ -41,6 +43,7 @@ const toDate = (value: any): Date | null => {
 
 const PlannerScreen = () => {
   const [uid, setUid] = useState<string | null>(auth().currentUser?.uid ?? null);
+  const { formatCurrency } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<PlannerEntry[]>([]);
   const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
@@ -253,6 +256,12 @@ const PlannerScreen = () => {
                     <Text style={styles.recipeName}>
                       {item.recipeName?.trim() || "Saved Ingredients"}
                     </Text>
+                    <Text style={styles.totalPriceText}>
+                      Total:{" "}
+                      {typeof item.totalPrice === "number" && item.totalPrice > 0
+                        ? formatCurrency(item.totalPrice)
+                        : "-"}
+                    </Text>
                     <Text style={styles.viewHint}>Tap to open website</Text>
                   </View>
                 </LinearGradient>
@@ -389,6 +398,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "800",
     color: "#111827",
+  },
+  totalPriceText: {
+    marginTop: 6,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0b7a2a",
   },
   viewHint: {
     marginTop: 4,

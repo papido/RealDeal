@@ -1051,11 +1051,62 @@ const MenuScreen = () => {
     [],
   );
 
+  const calculatePlannerTotalPrice = useCallback(
+    (items: SavedIngredient[]): number => {
+      let total = 0;
+
+      items.forEach((entry) => {
+        const ingredientName =
+          typeof entry.ingredient === "string" ? entry.ingredient : "";
+        const normalizedName = normalizeIngredient(ingredientName);
+        const meta = findIngredientMeta(normalizedName);
+        if (!meta) return;
+
+        const unitPriceRaw = meta.unitPrice?.toString() ?? "";
+        const unitPriceValue = unitPriceRaw
+          ? parseFloat(unitPriceRaw.replace(/[^\d.]/g, ""))
+          : NaN;
+        if (Number.isNaN(unitPriceValue)) return;
+
+        const quantityValue = entry.quantity
+          ? parseFloat(entry.quantity.toString().replace(/[^\d.]/g, ""))
+          : NaN;
+        if (Number.isNaN(quantityValue)) return;
+
+        const entryUnit = normalizeUnitKey(entry.unit ?? "");
+        const metaUnit = normalizeUnitKey(meta.unit ?? "");
+        const resolvedUnit = normalizeUnitKey(entry.resolvedUnit ?? "");
+        const resolvedQuantityValue =
+          entry.resolvedQuantity !== null && entry.resolvedQuantity !== undefined
+            ? parseFloat(entry.resolvedQuantity.toString())
+            : NaN;
+
+        let effectiveAmount = quantityValue;
+        if (
+          resolvedUnit &&
+          metaUnit &&
+          resolvedUnit === metaUnit &&
+          !Number.isNaN(resolvedQuantityValue)
+        ) {
+          effectiveAmount = resolvedQuantityValue;
+        } else if (entryUnit && metaUnit && entryUnit !== metaUnit) {
+          return;
+        }
+
+        total += unitPriceValue * effectiveAmount;
+      });
+
+      return total;
+    },
+    [findIngredientMeta, normalizeIngredient],
+  );
+
   const handleSaveToPlanner = useCallback(async () => {
     if (!uid || !plannerSourceTile || plannerSaving) return;
 
     const recipeName =
       plannerSourceTile.recipeName?.trim() || "Saved Ingredients";
+    const totalPrice = calculatePlannerTotalPrice(plannerSourceTile.items);
 
     try {
       setPlannerSaving(true);
@@ -1079,6 +1130,7 @@ const MenuScreen = () => {
           recipeId: plannerSourceTile.id,
           recipeName,
           items: plannerSourceTile.items,
+          totalPrice,
           plannedFor: firestore.Timestamp.fromDate(plannerDateTime),
           createdAt: firestore.FieldValue.serverTimestamp(),
         });
@@ -1091,7 +1143,13 @@ const MenuScreen = () => {
     } finally {
       setPlannerSaving(false);
     }
-  }, [uid, plannerSourceTile, plannerSaving, plannerDateTime]);
+  }, [
+    uid,
+    plannerSourceTile,
+    plannerSaving,
+    plannerDateTime,
+    calculatePlannerTotalPrice,
+  ]);
 
   const handleResolveMismatch = useCallback(
     async (
