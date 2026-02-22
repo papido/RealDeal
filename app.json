@@ -1,11 +1,9 @@
 {
   "expo": {
     "name": "RealDeal",
-    "slug": "realdeal",
+    "slug": "RealDeal",
     "version": "1.0.0",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/3ee1b712-c40c-4f1f-bf53-c132e5b3cb36"
     },
