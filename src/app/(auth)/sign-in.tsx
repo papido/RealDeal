@@ -72,7 +72,7 @@ const SignInScreen = () => {
           />
 
           <Image
-            source={require("@assets/images/iconImage.png")}
+            source={require("@assets/images/iconImage2.jpg")}
             style={styles.logo}
             resizeMode="contain"
           />

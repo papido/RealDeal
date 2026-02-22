@@ -3,6 +3,12 @@
     "name": "RealDeal",
     "slug": "realdeal",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3ee1b712-c40c-4f1f-bf53-c132e5b3cb36"
+    },
     "orientation": "portrait",
     "icon": "./src/assets/images/iconImage.png",
     "scheme": "realdeal",
