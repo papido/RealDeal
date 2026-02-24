@@ -8,19 +8,19 @@ import {
   ParsedIngredient,
 } from "@/src/constants/types";
 import { VOLUME_UNITS, VolumeUnit } from "@/src/constants/volumeUnits";
-import { useIngredients } from "@/src/contexts/IngredientsProvider";
 import { useCurrency } from "@/src/contexts/CurrencyProvider";
+import { useIngredients } from "@/src/contexts/IngredientsProvider";
 import {
   convertIngredient,
   findIngredientKeyByName,
 } from "@/src/utils/ingredientConverter";
 import { findCartMatches } from "@/src/utils/ingredientMatching";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, {
   useCallback,
@@ -289,9 +289,9 @@ const MenuScreen = () => {
             hitSlop={8}
             style={styles.headerHintButton}
             accessibilityRole="button"
-            accessibilityLabel="Show AI explanation"
+            accessibilityLabel="Open tutorial"
           >
-            <Ionicons name="help-circle-outline" size={22} color="#111827" />
+            <Text style={styles.headerHintText}>Tutorial</Text>
           </Pressable>
         </View>
       ),
@@ -476,7 +476,9 @@ const MenuScreen = () => {
 
   useEffect(() => {
     if (!selectedTileIdParam) return;
-    const exists = filteredTiles.some((tile) => tile.id === selectedTileIdParam);
+    const exists = filteredTiles.some(
+      (tile) => tile.id === selectedTileIdParam,
+    );
     if (exists) {
       setSelectedTileId(selectedTileIdParam);
     }
@@ -499,11 +501,11 @@ const MenuScreen = () => {
 
   const matchedIngredientSet = useMemo(() => {
     if (!selectedTile) return new Set<string>();
-      const matches = findCartMatches(
-        selectedTile.items as ParsedIngredient[],
-        [],
-        ingredients.map((item) => item.name),
-      );
+    const matches = findCartMatches(
+      selectedTile.items as ParsedIngredient[],
+      [],
+      ingredients.map((item) => item.name),
+    );
     return new Set(
       matches
         .map((item) => normalizeIngredient(item.ingredient ?? ""))
@@ -986,34 +988,37 @@ const MenuScreen = () => {
     });
   }, [router, selectedTile]);
 
-  const openPlannerModalForTile = useCallback(async (tile: PlannerSourceTile) => {
-    if (!uid) return;
-    try {
-      const existingEntries = await firestore()
-        .collection("users")
-        .doc(uid)
-        .collection("plannerEntries")
-        .limit(PLANNER_CARDS_LIMIT)
-        .get();
-      if (existingEntries.size >= PLANNER_CARDS_LIMIT) {
-        Alert.alert(
-          "Planner limit reached",
-          `You can save up to ${PLANNER_CARDS_LIMIT} planner cards.`,
-        );
+  const openPlannerModalForTile = useCallback(
+    async (tile: PlannerSourceTile) => {
+      if (!uid) return;
+      try {
+        const existingEntries = await firestore()
+          .collection("users")
+          .doc(uid)
+          .collection("plannerEntries")
+          .limit(PLANNER_CARDS_LIMIT)
+          .get();
+        if (existingEntries.size >= PLANNER_CARDS_LIMIT) {
+          Alert.alert(
+            "Planner limit reached",
+            `You can save up to ${PLANNER_CARDS_LIMIT} planner cards.`,
+          );
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking planner limit:", error);
+        Alert.alert("Failed to open planner", "Please try again.");
         return;
       }
-    } catch (error) {
-      console.error("Error checking planner limit:", error);
-      Alert.alert("Failed to open planner", "Please try again.");
-      return;
-    }
 
-    setPlannerSourceTile(tile);
-    setPlannerDateTime(new Date());
-    setShowDatePicker(false);
-    setShowTimePicker(false);
-    setShowPlannerModal(true);
-  }, [uid]);
+      setPlannerSourceTile(tile);
+      setPlannerDateTime(new Date());
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+      setShowPlannerModal(true);
+    },
+    [uid],
+  );
 
   const handleDateChange = useCallback(
     (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -1077,7 +1082,8 @@ const MenuScreen = () => {
         const metaUnit = normalizeUnitKey(meta.unit ?? "");
         const resolvedUnit = normalizeUnitKey(entry.resolvedUnit ?? "");
         const resolvedQuantityValue =
-          entry.resolvedQuantity !== null && entry.resolvedQuantity !== undefined
+          entry.resolvedQuantity !== null &&
+          entry.resolvedQuantity !== undefined
             ? parseFloat(entry.resolvedQuantity.toString())
             : NaN;
 
@@ -1127,13 +1133,13 @@ const MenuScreen = () => {
       }
 
       await plannerCollection.add({
-          recipeId: plannerSourceTile.id,
-          recipeName,
-          items: plannerSourceTile.items,
-          totalPrice,
-          plannedFor: firestore.Timestamp.fromDate(plannerDateTime),
-          createdAt: firestore.FieldValue.serverTimestamp(),
-        });
+        recipeId: plannerSourceTile.id,
+        recipeName,
+        items: plannerSourceTile.items,
+        totalPrice,
+        plannedFor: firestore.Timestamp.fromDate(plannerDateTime),
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      });
       setShowPlannerModal(false);
       setPlannerSourceTile(null);
       Alert.alert("Added to planner", `${recipeName} was scheduled.`);
@@ -1160,9 +1166,11 @@ const MenuScreen = () => {
       forceAI: boolean = false,
       aiOverride?: { amount: number; unit: string; densityEstimated?: boolean },
       persist: boolean = true,
-    ): Promise<
-      { amount: number; unit: string; densityEstimated?: boolean } | null
-    > => {
+    ): Promise<{
+      amount: number;
+      unit: string;
+      densityEstimated?: boolean;
+    } | null> => {
       if (!metaUnit) return;
       if (!uid || !selectedTileId) return;
       if (!entry.ingredient || !entry.unit) return;
@@ -1545,7 +1553,9 @@ const MenuScreen = () => {
                       delayLongPress={300}
                     >
                       <Text style={styles.dropdownItemText}>
-                        {tile.recipeName?.trim() || `Saved Ingredients #${index + 1}`} ({tile.items.length})
+                        {tile.recipeName?.trim() ||
+                          `Saved Ingredients #${index + 1}`}{" "}
+                        ({tile.items.length})
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -1568,82 +1578,86 @@ const MenuScreen = () => {
                     style={styles.selectedTile}
                   >
                     <View style={styles.tileHeader}>
-                    <TouchableOpacity
-                      onLongPress={() => openPlannerModalForTile(selectedTile)}
-                      delayLongPress={300}
-                      style={styles.recipeNamePressable}
-                    >
-                      <Text style={styles.tileTitle}>
-                        {selectedTile.recipeName?.trim() || "Selected Ingredients"} ({selectedTile.items.length})
-                      </Text>
-                    </TouchableOpacity>
-                    <View style={styles.tileActions}>
                       <TouchableOpacity
-                        onPress={handleFixAll}
-                        style={styles.fixAllButton}
-                        accessibilityLabel="Fix all ingredients"
-                        accessibilityRole="button"
-                        disabled={fixAllLoading}
+                        onLongPress={() =>
+                          openPlannerModalForTile(selectedTile)
+                        }
+                        delayLongPress={300}
+                        style={styles.recipeNamePressable}
                       >
-                        <Text style={styles.fixAllText}>
-                          {fixAllLoading
-                            ? "Fixing..."
-                            : `Fix all (${fixAllCount})`}
+                        <Text style={styles.tileTitle}>
+                          {selectedTile.recipeName?.trim() ||
+                            "Selected Ingredients"}{" "}
+                          ({selectedTile.items.length})
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={handleTogglePrices}
-                        style={styles.iconButton}
-                        accessibilityLabel={
-                          showSelectedPrices
-                            ? "Hide selected ingredient prices"
-                            : "Show selected ingredient prices"
-                        }
-                        accessibilityRole="button"
-                      >
-                        <Ionicons
-                          name={
+                      <View style={styles.tileActions}>
+                        <TouchableOpacity
+                          onPress={handleFixAll}
+                          style={styles.fixAllButton}
+                          accessibilityLabel="Fix all ingredients"
+                          accessibilityRole="button"
+                          disabled={fixAllLoading}
+                        >
+                          <Text style={styles.fixAllText}>
+                            {fixAllLoading
+                              ? "Fixing..."
+                              : `Fix all (${fixAllCount})`}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleTogglePrices}
+                          style={styles.iconButton}
+                          accessibilityLabel={
                             showSelectedPrices
-                              ? "eye-off-outline"
-                              : "eye-outline"
+                              ? "Hide selected ingredient prices"
+                              : "Show selected ingredient prices"
                           }
-                          size={18}
-                          color="#334155"
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={handleEditSelected}
-                        style={styles.editButton}
-                        accessibilityLabel="Edit saved ingredients"
-                        accessibilityRole="button"
-                      >
-                        <Ionicons
-                          name="create-outline"
-                          size={18}
-                          color="#334155"
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={handleDeleteSelected}
-                        style={styles.deleteButton}
-                        accessibilityLabel="Delete saved ingredients"
-                        accessibilityRole="button"
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={18}
-                          color="#b91c1c"
-                        />
-                      </TouchableOpacity>
+                          accessibilityRole="button"
+                        >
+                          <Ionicons
+                            name={
+                              showSelectedPrices
+                                ? "eye-off-outline"
+                                : "eye-outline"
+                            }
+                            size={18}
+                            color="#334155"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleEditSelected}
+                          style={styles.editButton}
+                          accessibilityLabel="Edit saved ingredients"
+                          accessibilityRole="button"
+                        >
+                          <Ionicons
+                            name="create-outline"
+                            size={18}
+                            color="#334155"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleDeleteSelected}
+                          style={styles.deleteButton}
+                          accessibilityLabel="Delete saved ingredients"
+                          accessibilityRole="button"
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color="#b91c1c"
+                          />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  </View>
                     <View style={styles.legendRow}>
                       <Text style={[styles.legendPill, styles.legendGreen]}>
                         Green = in cart
                       </Text>
-                    <Text style={[styles.legendPill, styles.legendGray]}>
-                      Black = not in cart
-                    </Text>
+                      <Text style={[styles.legendPill, styles.legendGray]}>
+                        Black = not in cart
+                      </Text>
                       <Text style={[styles.legendPill, styles.legendYellow]}>
                         Yellow = unit mismatch
                       </Text>
@@ -1653,315 +1667,304 @@ const MenuScreen = () => {
                     </View>
                     <View style={styles.tileList}>
                       {(() => {
-                      let totalSum = 0;
-                      const computedEntries = selectedTile.items.map(
-                        (entry, entryIndex) => {
-                          const ingredientName =
-                            typeof entry.ingredient === "string"
-                              ? entry.ingredient
-                              : "";
-                          const normalizedName =
-                            normalizeIngredient(ingredientName);
-                          const isMatch = isMatchedIngredient(normalizedName);
-                          const meta = findIngredientMeta(normalizedName);
-                          const entryKey = `${selectedTile.id}-${entryIndex}`;
-                          const aiConversion = aiConversions[entryKey];
-                          const rawUnit =
-                            typeof entry.unit === "string" ? entry.unit : "";
-                          const entryUnit = rawUnit.toLowerCase().trim();
-                          const metaUnit = normalizeUnitKey(meta?.unit ?? "");
-                          const resolvedUnit = normalizeUnitKey(
-                            entry.resolvedUnit ?? "",
-                          );
-                          const resolvedQuantityValue =
-                            typeof entry.resolvedQuantity === "number"
-                              ? entry.resolvedQuantity
-                              : NaN;
-                          const densityEstimated =
-                            !!entry.resolvedDensityEstimated;
-                          const autoPieceResolved = metaUnit === "piece";
-                          const unitMismatch =
-                            !!entryUnit &&
-                            !!metaUnit &&
-                            normalizeUnitKey(entryUnit) !== metaUnit;
-                          const isToTaste = /\bto taste\b/i.test(entryUnit);
-                          const isSalt = normalizedName.includes("salt");
-                          const toTasteAmount = isToTaste && isSalt ? 0.5 : NaN;
-                          const unitPriceRaw =
-                            meta?.unitPrice?.toString() ?? "";
-                          const unitPriceDisplay = unitPriceRaw
-                            .replace(/rm\s*/i, "")
-                            .trim();
-                          const unitPriceValue = unitPriceRaw
-                            ? parseFloat(unitPriceRaw.replace(/[^\d.]/g, ""))
-                            : NaN;
-                          const quantityValue = entry.quantity
-                            ? parseFloat(
-                                entry.quantity
-                                  .toString()
-                                  .replace(/[^\d.]/g, ""),
-                              )
-                            : NaN;
-                          const booleanQuantity =
-                            entry.quantity === true ? 1 : NaN;
-                          const resolvedQuantityForDisplay = !Number.isNaN(
-                            quantityValue,
-                          )
-                            ? quantityValue
-                            : !Number.isNaN(booleanQuantity)
-                              ? booleanQuantity
-                              : NaN;
-                          const displayQuantity = !Number.isNaN(
-                            resolvedQuantityForDisplay,
-                          )
-                            ? resolvedQuantityForDisplay
-                            : "?";
-                          const conversion = (() => {
-                            if (!unitMismatch || !Number.isNaN(toTasteAmount)) {
-                              return null;
-                            }
-                            if (!entry.unit || Number.isNaN(quantityValue)) {
-                              return null;
-                            }
-                            const volumeUnit = toVolumeUnit(entry.unit);
-                            const weightFactor = getWeightToGrams(entry.unit);
-                            if (!volumeUnit && !weightFactor) return null;
-
-                            const ingredientKey =
-                              findIngredientKeyByName(ingredientName);
-                            if (ingredientKey) {
-                              const viaCatalog = convertIngredient(
-                                ingredientKey,
-                                quantityValue,
-                                volumeUnit,
-                              );
-                              if (viaCatalog) return viaCatalog;
-                            }
-
-                            if (
-                              meta?.unit &&
-                              (meta.unit === "g" || meta.unit === "ml")
-                            ) {
-                              if (meta.unit === "g" && weightFactor) {
-                                const gramsValue = quantityValue * weightFactor;
-                                return {
-                                  value: gramsValue,
-                                  unit: "g",
-                                  display: `${gramsValue} g`,
-                                };
-                              }
-                              if (volumeUnit) {
-                                const mlAmount =
-                                  quantityValue * VOLUME_UNITS[volumeUnit];
-                                const densityValue =
-                                  typeof meta?.density === "number"
-                                    ? meta.density
-                                    : getFallbackDensity(ingredientName);
-                                if (meta.unit === "ml") {
-                                  return {
-                                    value: mlAmount,
-                                    unit: "ml",
-                                    display: `${mlAmount} ml`,
-                                  };
-                                }
-                                if (densityValue !== null) {
-                                  const converted = mlAmount * densityValue;
-                                  return {
-                                    value: converted,
-                                    unit: "g",
-                                    display: `${converted} g`,
-                                  };
-                                }
-                              }
-                            }
-
-                            return null;
-                          })();
-                          const resolvedMismatch =
-                            !Number.isNaN(toTasteAmount) ||
-                            (!!conversion &&
-                              !!meta?.unit &&
-                              conversion.unit === meta.unit) ||
-                            (!!aiConversion &&
-                              !!meta?.unit &&
-                              normalizeUnitKey(aiConversion.unit) ===
-                                normalizeUnitKey(meta.unit)) ||
-                            (!!resolvedUnit &&
+                        let totalSum = 0;
+                        const computedEntries = selectedTile.items.map(
+                          (entry, entryIndex) => {
+                            const ingredientName =
+                              typeof entry.ingredient === "string"
+                                ? entry.ingredient
+                                : "";
+                            const normalizedName =
+                              normalizeIngredient(ingredientName);
+                            const isMatch = isMatchedIngredient(normalizedName);
+                            const meta = findIngredientMeta(normalizedName);
+                            const entryKey = `${selectedTile.id}-${entryIndex}`;
+                            const aiConversion = aiConversions[entryKey];
+                            const rawUnit =
+                              typeof entry.unit === "string" ? entry.unit : "";
+                            const entryUnit = rawUnit.toLowerCase().trim();
+                            const metaUnit = normalizeUnitKey(meta?.unit ?? "");
+                            const resolvedUnit = normalizeUnitKey(
+                              entry.resolvedUnit ?? "",
+                            );
+                            const resolvedQuantityValue =
+                              typeof entry.resolvedQuantity === "number"
+                                ? entry.resolvedQuantity
+                                : NaN;
+                            const densityEstimated =
+                              !!entry.resolvedDensityEstimated;
+                            const autoPieceResolved = metaUnit === "piece";
+                            const unitMismatch =
+                              !!entryUnit &&
                               !!metaUnit &&
-                              resolvedUnit === metaUnit) ||
-                            autoPieceResolved;
-                          if (
-                            isMatch &&
-                            unitMismatch &&
-                            !resolvedMismatch &&
-                            resolvedUnit
-                          ) {
-                            console.log("Unresolved after AI save:", {
-                              ingredient: ingredientName,
-                              entryUnit,
-                              metaUnit,
-                              resolvedUnit,
-                              resolvedQuantityValue,
-                            });
-                          }
-                          const effectiveAmount = resolvedMismatch
-                            ? !Number.isNaN(toTasteAmount)
-                              ? toTasteAmount
-                              : autoPieceResolved
-                                ? !Number.isNaN(quantityValue)
-                                  ? quantityValue
-                                  : 1
-                                : !Number.isNaN(resolvedQuantityValue) &&
-                                    resolvedUnit === metaUnit
-                                  ? resolvedQuantityValue
-                                  : (aiConversion?.value ?? conversion?.value)
-                            : !Number.isNaN(quantityValue)
+                              normalizeUnitKey(entryUnit) !== metaUnit;
+                            const isToTaste = /\bto taste\b/i.test(entryUnit);
+                            const isSalt = normalizedName.includes("salt");
+                            const toTasteAmount =
+                              isToTaste && isSalt ? 0.5 : NaN;
+                            const unitPriceRaw =
+                              meta?.unitPrice?.toString() ?? "";
+                            const unitPriceDisplay = unitPriceRaw
+                              .replace(/rm\s*/i, "")
+                              .trim();
+                            const unitPriceValue = unitPriceRaw
+                              ? parseFloat(unitPriceRaw.replace(/[^\d.]/g, ""))
+                              : NaN;
+                            const quantityValue = entry.quantity
+                              ? parseFloat(
+                                  entry.quantity
+                                    .toString()
+                                    .replace(/[^\d.]/g, ""),
+                                )
+                              : NaN;
+                            const booleanQuantity =
+                              entry.quantity === true ? 1 : NaN;
+                            const resolvedQuantityForDisplay = !Number.isNaN(
+                              quantityValue,
+                            )
                               ? quantityValue
                               : !Number.isNaN(booleanQuantity)
                                 ? booleanQuantity
                                 : NaN;
-                          const totalPrice =
-                            !Number.isNaN(unitPriceValue) &&
-                            !Number.isNaN(effectiveAmount)
-                              ? unitPriceValue * effectiveAmount
-                              : NaN;
-                          if (!Number.isNaN(totalPrice)) {
-                            totalSum += totalPrice;
-                          }
-                          const priceUnit = !Number.isNaN(toTasteAmount)
-                            ? "g"
-                            : autoPieceResolved
-                              ? "piece"
-                              : resolvedUnit && resolvedUnit === metaUnit
-                                ? resolvedUnit
-                                : (aiConversion?.unit ??
-                                  conversion?.unit ??
-                                  meta?.unit ??
-                                  "");
-                          const unitPriceLabel =
-                            isMatch && meta && !Number.isNaN(unitPriceValue)
-                              ? [unitPriceDisplay, priceUnit]
-                                  .filter(Boolean)
-                                  .join(" / ")
+                            const displayQuantity = !Number.isNaN(
+                              resolvedQuantityForDisplay,
+                            )
+                              ? resolvedQuantityForDisplay
+                              : "?";
+                            const conversion = (() => {
+                              if (
+                                !unitMismatch ||
+                                !Number.isNaN(toTasteAmount)
+                              ) {
+                                return null;
+                              }
+                              if (!entry.unit || Number.isNaN(quantityValue)) {
+                                return null;
+                              }
+                              const volumeUnit = toVolumeUnit(entry.unit);
+                              const weightFactor = getWeightToGrams(entry.unit);
+                              if (!volumeUnit && !weightFactor) return null;
+
+                              const ingredientKey =
+                                findIngredientKeyByName(ingredientName);
+                              if (ingredientKey) {
+                                const viaCatalog = convertIngredient(
+                                  ingredientKey,
+                                  quantityValue,
+                                  volumeUnit,
+                                );
+                                if (viaCatalog) return viaCatalog;
+                              }
+
+                              if (
+                                meta?.unit &&
+                                (meta.unit === "g" || meta.unit === "ml")
+                              ) {
+                                if (meta.unit === "g" && weightFactor) {
+                                  const gramsValue =
+                                    quantityValue * weightFactor;
+                                  return {
+                                    value: gramsValue,
+                                    unit: "g",
+                                    display: `${gramsValue} g`,
+                                  };
+                                }
+                                if (volumeUnit) {
+                                  const mlAmount =
+                                    quantityValue * VOLUME_UNITS[volumeUnit];
+                                  const densityValue =
+                                    typeof meta?.density === "number"
+                                      ? meta.density
+                                      : getFallbackDensity(ingredientName);
+                                  if (meta.unit === "ml") {
+                                    return {
+                                      value: mlAmount,
+                                      unit: "ml",
+                                      display: `${mlAmount} ml`,
+                                    };
+                                  }
+                                  if (densityValue !== null) {
+                                    const converted = mlAmount * densityValue;
+                                    return {
+                                      value: converted,
+                                      unit: "g",
+                                      display: `${converted} g`,
+                                    };
+                                  }
+                                }
+                              }
+
+                              return null;
+                            })();
+                            const resolvedMismatch =
+                              !Number.isNaN(toTasteAmount) ||
+                              (!!conversion &&
+                                !!meta?.unit &&
+                                conversion.unit === meta.unit) ||
+                              (!!aiConversion &&
+                                !!meta?.unit &&
+                                normalizeUnitKey(aiConversion.unit) ===
+                                  normalizeUnitKey(meta.unit)) ||
+                              (!!resolvedUnit &&
+                                !!metaUnit &&
+                                resolvedUnit === metaUnit) ||
+                              autoPieceResolved;
+                            if (
+                              isMatch &&
+                              unitMismatch &&
+                              !resolvedMismatch &&
+                              resolvedUnit
+                            ) {
+                              console.log("Unresolved after AI save:", {
+                                ingredient: ingredientName,
+                                entryUnit,
+                                metaUnit,
+                                resolvedUnit,
+                                resolvedQuantityValue,
+                              });
+                            }
+                            const effectiveAmount = resolvedMismatch
+                              ? !Number.isNaN(toTasteAmount)
+                                ? toTasteAmount
+                                : autoPieceResolved
+                                  ? !Number.isNaN(quantityValue)
+                                    ? quantityValue
+                                    : 1
+                                  : !Number.isNaN(resolvedQuantityValue) &&
+                                      resolvedUnit === metaUnit
+                                    ? resolvedQuantityValue
+                                    : (aiConversion?.value ?? conversion?.value)
+                              : !Number.isNaN(quantityValue)
+                                ? quantityValue
+                                : !Number.isNaN(booleanQuantity)
+                                  ? booleanQuantity
+                                  : NaN;
+                            const totalPrice =
+                              !Number.isNaN(unitPriceValue) &&
+                              !Number.isNaN(effectiveAmount)
+                                ? unitPriceValue * effectiveAmount
+                                : NaN;
+                            if (!Number.isNaN(totalPrice)) {
+                              totalSum += totalPrice;
+                            }
+                            const priceUnit = !Number.isNaN(toTasteAmount)
+                              ? "g"
+                              : autoPieceResolved
+                                ? "piece"
+                                : resolvedUnit && resolvedUnit === metaUnit
+                                  ? resolvedUnit
+                                  : (aiConversion?.unit ??
+                                    conversion?.unit ??
+                                    meta?.unit ??
+                                    "");
+                            const unitPriceLabel =
+                              isMatch && meta && !Number.isNaN(unitPriceValue)
+                                ? [unitPriceDisplay, priceUnit]
+                                    .filter(Boolean)
+                                    .join(" / ")
+                                : "";
+                            const totalLabel = isMatch
+                              ? !Number.isNaN(totalPrice)
+                                ? formatCurrency(totalPrice)
+                                : ""
                               : "";
-                          const totalLabel = isMatch
-                            ? !Number.isNaN(totalPrice)
-                              ? formatCurrency(totalPrice)
-                              : ""
-                            : "";
-                          const conversionLabel = !Number.isNaN(toTasteAmount)
-                            ? `${toTasteAmount} g`
-                            : autoPieceResolved
-                              ? `${!Number.isNaN(quantityValue) ? quantityValue : 1} piece`
-                              : resolvedUnit &&
-                                  resolvedUnit === metaUnit &&
-                                  !Number.isNaN(resolvedQuantityValue)
-                                ? `${resolvedQuantityValue} ${resolvedUnit}`
-                                : aiConversion
-                                  ? aiConversion.display
-                                  : conversion
-                                    ? `${conversion.display}`
-                                    : "";
-                          const showResolveButton =
-                            isMatch && unitMismatch && !resolvedMismatch;
-                          const densityFlag = densityEstimated
-                            ? "AI density"
-                            : "";
-                          const metaText = [
-                            showSelectedPrices ? unitPriceLabel : "",
-                            showSelectedPrices ? conversionLabel : "",
-                            showSelectedPrices ? densityFlag : "",
-                            showSelectedPrices ? totalLabel : "",
-                          ]
-                            .filter((value) => {
-                              if (!value) return false;
-                              const text = value
-                                .toString()
-                                .trim()
-                                .toLowerCase();
-                              return text !== "true" && text !== "false";
-                            })
-                            .join(" • ");
+                            const conversionLabel = !Number.isNaN(toTasteAmount)
+                              ? `${toTasteAmount} g`
+                              : autoPieceResolved
+                                ? `${!Number.isNaN(quantityValue) ? quantityValue : 1} piece`
+                                : resolvedUnit &&
+                                    resolvedUnit === metaUnit &&
+                                    !Number.isNaN(resolvedQuantityValue)
+                                  ? `${resolvedQuantityValue} ${resolvedUnit}`
+                                  : aiConversion
+                                    ? aiConversion.display
+                                    : conversion
+                                      ? `${conversion.display}`
+                                      : "";
+                            const showResolveButton =
+                              isMatch && unitMismatch && !resolvedMismatch;
+                            const densityFlag = densityEstimated
+                              ? "AI density"
+                              : "";
+                            const metaText = [
+                              showSelectedPrices ? unitPriceLabel : "",
+                              showSelectedPrices ? conversionLabel : "",
+                              showSelectedPrices ? densityFlag : "",
+                              showSelectedPrices ? totalLabel : "",
+                            ]
+                              .filter((value) => {
+                                if (!value) return false;
+                                const text = value
+                                  .toString()
+                                  .trim()
+                                  .toLowerCase();
+                                return text !== "true" && text !== "false";
+                              })
+                              .join(" • ");
 
-                          return {
-                            entry,
-                            entryIndex,
-                            ingredientName,
-                            normalizedName,
-                            isMatch,
-                            meta,
-                            entryKey,
-                            rawUnit,
-                            entryUnit,
-                            metaUnit,
-                            resolvedUnit,
-                            resolvedMismatch,
-                            effectiveAmount,
-                            priceUnit,
-                            unitMismatch,
-                            displayQuantity,
-                            showResolveButton,
-                            metaText,
-                          };
-                        },
-                      );
+                            return {
+                              entry,
+                              entryIndex,
+                              ingredientName,
+                              normalizedName,
+                              isMatch,
+                              meta,
+                              entryKey,
+                              rawUnit,
+                              entryUnit,
+                              metaUnit,
+                              resolvedUnit,
+                              resolvedMismatch,
+                              effectiveAmount,
+                              priceUnit,
+                              unitMismatch,
+                              displayQuantity,
+                              showResolveButton,
+                              metaText,
+                            };
+                          },
+                        );
 
-                      const hasUnresolvedMismatch = computedEntries.some(
-                        (item) =>
-                          item.isMatch &&
-                          item.unitMismatch &&
-                          !item.resolvedMismatch,
-                      );
-                      const enableQuantityCheck = !hasUnresolvedMismatch;
-
-                      const rows = computedEntries.map((item) => {
-                        const requiredBase =
-                          enableQuantityCheck &&
-                          item.isMatch &&
-                          !Number.isNaN(item.effectiveAmount) &&
-                          item.priceUnit
-                            ? toBaseAmount(item.effectiveAmount, item.priceUnit)
-                            : null;
-                        const stock =
-                          enableQuantityCheck && item.isMatch
-                            ? ingredientStockMap.get(item.normalizedName)
-                            : null;
-                        const isLowInCart =
-                          enableQuantityCheck &&
-                          item.isMatch &&
-                          requiredBase &&
-                          stock &&
-                          stock.unit === requiredBase.unit &&
-                          stock.amount < requiredBase.amount;
-
-                        return (
-                          <View
-                            key={`${selectedTile.id}-${item.entryIndex}`}
-                            style={styles.tileItemRow}
-                          >
-                            <Text
-                              style={[
-                                styles.tileItem,
-                                styles.tileItemLabel,
-                                item.isMatch && styles.tileItemMatch,
-                                item.isMatch &&
-                                  item.unitMismatch &&
-                                  !item.resolvedMismatch &&
-                                  styles.tileItemWarn,
-                                isLowInCart && styles.tileItemLow,
-                              ]}
-                            >
-                              {"- "}
-                              {item.displayQuantity}{" "}
-                              {item.rawUnit ? `${item.rawUnit} ` : ""}
-                              {item.ingredientName || "Unnamed"}
-                            </Text>
-                            {showSelectedPrices &&
+                        const hasUnresolvedMismatch = computedEntries.some(
+                          (item) =>
                             item.isMatch &&
-                            item.metaText ? (
+                            item.unitMismatch &&
+                            !item.resolvedMismatch,
+                        );
+                        const enableQuantityCheck = !hasUnresolvedMismatch;
+
+                        const rows = computedEntries.map((item) => {
+                          const requiredBase =
+                            enableQuantityCheck &&
+                            item.isMatch &&
+                            !Number.isNaN(item.effectiveAmount) &&
+                            item.priceUnit
+                              ? toBaseAmount(
+                                  item.effectiveAmount,
+                                  item.priceUnit,
+                                )
+                              : null;
+                          const stock =
+                            enableQuantityCheck && item.isMatch
+                              ? ingredientStockMap.get(item.normalizedName)
+                              : null;
+                          const isLowInCart =
+                            enableQuantityCheck &&
+                            item.isMatch &&
+                            requiredBase &&
+                            stock &&
+                            stock.unit === requiredBase.unit &&
+                            stock.amount < requiredBase.amount;
+
+                          return (
+                            <View
+                              key={`${selectedTile.id}-${item.entryIndex}`}
+                              style={styles.tileItemRow}
+                            >
                               <Text
                                 style={[
-                                  styles.tileItemMeta,
+                                  styles.tileItem,
+                                  styles.tileItemLabel,
                                   item.isMatch && styles.tileItemMatch,
                                   item.isMatch &&
                                     item.unitMismatch &&
@@ -1970,52 +1973,71 @@ const MenuScreen = () => {
                                   isLowInCart && styles.tileItemLow,
                                 ]}
                               >
-                                {item.metaText}
+                                {"- "}
+                                {item.displayQuantity}{" "}
+                                {item.rawUnit ? `${item.rawUnit} ` : ""}
+                                {item.ingredientName || "Unnamed"}
                               </Text>
-                            ) : null}
-                            {showSelectedPrices && item.showResolveButton ? (
-                              <TouchableOpacity
-                                style={[
-                                  styles.resolveButton,
-                                  aiLoading[item.entryKey] &&
-                                    styles.resolveButtonDisabled,
-                                ]}
-                                onPress={() =>
-                                  handleResolveMismatch(
-                                    item.entry,
-                                    item.entryIndex,
-                                    item.entryKey,
-                                    item.meta?.unit ?? null,
-                                  )
-                                }
-                                disabled={aiLoading[item.entryKey]}
-                              >
-                                <Ionicons
-                                  name="close-circle"
-                                  size={18}
-                                  color="#b91c1c"
-                                />
-                              </TouchableOpacity>
-                            ) : null}
-                          </View>
-                        );
-                      });
-
-                      return (
-                        <>
-                          {rows}
-                          {showSelectedPrices ? (
-                            <View style={styles.totalRow}>
-                              <Text style={styles.totalLabel}>Total</Text>
-                              <Text style={styles.totalValue}>
-                                {totalSum > 0
-                                  ? formatCurrency(totalSum)
-                                  : `${currencySymbol}-`}
-                              </Text>
+                              {showSelectedPrices &&
+                              item.isMatch &&
+                              item.metaText ? (
+                                <Text
+                                  style={[
+                                    styles.tileItemMeta,
+                                    item.isMatch && styles.tileItemMatch,
+                                    item.isMatch &&
+                                      item.unitMismatch &&
+                                      !item.resolvedMismatch &&
+                                      styles.tileItemWarn,
+                                    isLowInCart && styles.tileItemLow,
+                                  ]}
+                                >
+                                  {item.metaText}
+                                </Text>
+                              ) : null}
+                              {showSelectedPrices && item.showResolveButton ? (
+                                <TouchableOpacity
+                                  style={[
+                                    styles.resolveButton,
+                                    aiLoading[item.entryKey] &&
+                                      styles.resolveButtonDisabled,
+                                  ]}
+                                  onPress={() =>
+                                    handleResolveMismatch(
+                                      item.entry,
+                                      item.entryIndex,
+                                      item.entryKey,
+                                      item.meta?.unit ?? null,
+                                    )
+                                  }
+                                  disabled={aiLoading[item.entryKey]}
+                                >
+                                  <Ionicons
+                                    name="close-circle"
+                                    size={18}
+                                    color="#b91c1c"
+                                  />
+                                </TouchableOpacity>
+                              ) : null}
                             </View>
-                          ) : null}
-                        </>
-                      );
+                          );
+                        });
+
+                        return (
+                          <>
+                            {rows}
+                            {showSelectedPrices ? (
+                              <View style={styles.totalRow}>
+                                <Text style={styles.totalLabel}>Total</Text>
+                                <Text style={styles.totalValue}>
+                                  {totalSum > 0
+                                    ? formatCurrency(totalSum)
+                                    : `${currencySymbol}-`}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </>
+                        );
                       })()}
                     </View>
                   </LinearGradient>
@@ -2033,15 +2055,31 @@ const MenuScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>How AI helps</Text>
+            <Text style={styles.modalTitle}>
+              How To Calculate Exact Recipe Price
+            </Text>
             <Text style={styles.modalSubtitle}>
-              AI estimates unit conversions and ingredient matching so you can
-              compare your saved ingredients against what’s in your cart.
+              1. Enter all your ingredients in cart and save.
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              2. Parse your recipe ingredients in Parse page appropriately and
+              save.
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              3. Open menu page and press 'eye' icon to reveal prices.
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              4. If the ingredients is green = saved ingredients in cart and
+              price already calculated.
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              5. If the ingredients is yellow = saved ingredients in cart but
+              units don't match
             </Text>
             <Text style={styles.modalBody}>
-              When units don’t match (e.g., tbsp vs g), AI suggests a best-fit
-              conversion based on ingredient density. You can accept or edit
-              results before saving.
+              When units don't match (e.g., tbsp vs g), AI suggests a best-fit
+              conversion based on ingredient density. You can edit parsed
+              ingredients before saving to avoid AI conversion.
             </Text>
             <View style={styles.modalActions}>
               <Pressable
@@ -2493,7 +2531,16 @@ const styles = StyleSheet.create({
   },
   headerHintButton: {
     marginLeft: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#1f2937",
+  },
+  headerHintText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
   },
   selectedTileWrap: {
     marginTop: 16,

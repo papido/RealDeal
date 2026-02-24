@@ -60,7 +60,9 @@ export default function MenuStack() {
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Link href="/(user)/menu/parseIng" asChild>
                   <Pressable style={{ marginRight: 12 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
                       <Pressable
                         onPress={() => setShowCreditInfo(true)}
                         style={styles.creditPill}
@@ -95,7 +97,10 @@ export default function MenuStack() {
             ),
           }}
         />
-        <Stack.Screen name="parseIng" options={{ title: "Parse Ingredients" }} />
+        <Stack.Screen
+          name="parseIng"
+          options={{ title: "Parse Ingredients" }}
+        />
       </Stack>
       <Modal
         visible={showCreditInfo}
@@ -107,24 +112,14 @@ export default function MenuStack() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>AI credit usage</Text>
             <Text style={styles.modalBody}>
-              Conversions can use AI credits when units don’t match. The exact
+              Conversions can use AI credits when units don't match. The exact
               cost depends on how many mismatches are found.
             </Text>
-            <Text style={styles.modalBody}>
-              Fix All uses a sliding cost:
-            </Text>
-            <Text style={styles.modalList}>
-              1–10 mismatches: 3 credits
-            </Text>
-            <Text style={styles.modalList}>
-              11–20 mismatches: 4 credits
-            </Text>
-            <Text style={styles.modalList}>
-              21–40 mismatches: 6 credits
-            </Text>
-            <Text style={styles.modalList}>
-              41+ mismatches: 7 credits
-            </Text>
+            <Text style={styles.modalBody}>Fix All uses a sliding cost:</Text>
+            <Text style={styles.modalList}>1–10 mismatches: 3 credits</Text>
+            <Text style={styles.modalList}>11–20 mismatches: 4 credits</Text>
+            <Text style={styles.modalList}>21–40 mismatches: 6 credits</Text>
+            <Text style={styles.modalList}>41+ mismatches: 7 credits</Text>
             <View style={styles.modalActions}>
               <Pressable
                 onPress={() => setShowCreditInfo(false)}
