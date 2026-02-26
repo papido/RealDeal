@@ -2532,7 +2532,8 @@ const styles = StyleSheet.create({
   headerHintButton: {
     marginLeft: 6,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
+    marginTop: 1,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#1f2937",

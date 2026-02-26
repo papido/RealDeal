@@ -6,11 +6,15 @@ import React, {
   ReactNode,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
 import { AuthContextType, UserType } from "@/src/constants/types";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 import { Alert } from "react-native";
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,6 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [code, setCode] = useState("");
+  const googleSignInInProgressRef = useRef(false);
   // const [confirm, setConfirm] =
   //   useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
 
@@ -76,6 +81,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   //Google Auth
   const signInWithGoogle = async () => {
+    if (googleSignInInProgressRef.current) {
+      return;
+    }
+
+    googleSignInInProgressRef.current = true;
     try {
       setIsLoading(true);
       // Check if device supports Google Play
@@ -109,10 +119,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         },
         { merge: true },
       );
-    } catch (error) {
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === statusCodes.IN_PROGRESS) {
+        return;
+      }
+      if (code === statusCodes.SIGN_IN_CANCELLED) {
+        return;
+      }
       console.error("Google Sign-In Error:", error);
       Alert.alert("Error", "Google Sign-In failed");
     } finally {
+      googleSignInInProgressRef.current = false;
       setIsLoading(false);
     }
   };

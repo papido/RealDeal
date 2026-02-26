@@ -23,6 +23,7 @@ const SignInScreen = () => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { login, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -52,6 +53,16 @@ const SignInScreen = () => {
     if (!res.success) {
       Alert.alert("Sign in", res.msg);
       return;
+    }
+  };
+
+  const onGoogleSubmit = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -122,8 +133,9 @@ const SignInScreen = () => {
           </Button>
 
           <TouchableOpacity
-            onPress={signInWithGoogle}
-            style={styles.socialButton}
+            onPress={onGoogleSubmit}
+            disabled={googleLoading}
+            style={[styles.socialButton, googleLoading && styles.socialButtonDisabled]}
           >
             <AntDesign
               name="google"
@@ -239,6 +251,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginTop: 12,
     marginHorizontal: 10,
+  },
+  socialButtonDisabled: {
+    opacity: 0.7,
   },
   icon: {
     marginRight: 10,
