@@ -11,7 +11,7 @@
     "icon": "./src/assets/images/iconImage.png",
     "scheme": "realdeal",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./src/assets/images/splashImage.png",
       "resizeMode": "cover",
