@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove"/>
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove"/>
+  <uses-permission android:name="android.permission.CAMERA" tools:node="remove"/>
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -34,7 +35,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="realdeal"/>
-        <data android:scheme="exp+realdeal"/>
+        <data android:scheme="exp+recipeflow"/>
       </intent-filter>
     </activity>
   </application>

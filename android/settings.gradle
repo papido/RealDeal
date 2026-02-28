@@ -1,5 +1,3 @@
-import groovy.json.JsonSlurper
-
 pluginManagement {
   def reactNativeGradlePlugin = new File(
     providers.exec {
@@ -25,68 +23,17 @@ plugins {
 }
 
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
-  ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
+  if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
+    ex.autolinkLibrariesFromCommand()
+  } else {
+    ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
+  }
 }
 expoAutolinking.useExpoModules()
 
-rootProject.name = 'RealDeal'
+rootProject.name = 'RecipeFlow'
 
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
-
-// Guard against mis-resolved RN library project directories.
-def autolinkingJson = file("build/generated/autolinking/autolinking.json")
-if (autolinkingJson.exists()) {
-  def autolinking = new JsonSlurper().parse(autolinkingJson)
-  autolinking?.dependencies?.each { packageName, dep ->
-    def androidConfig = dep?.platforms?.android
-    def sourceDir = androidConfig?.sourceDir
-    if (!sourceDir) return
-
-    def gradleProjectName = ":" + packageName
-      .replace("@", "")
-      .replace("/", "_")
-
-    if (findProject(gradleProjectName) != null) {
-      project(gradleProjectName).projectDir = file(sourceDir)
-    }
-  }
-}
-
-// Fallback fix: some autolinking setups include package roots instead of their
-// Android library module dir. Remap those projects to `<package>/android`.
-rootProject.children.each { child ->
-  if (child.name == "app") return
-  def currentDir = child.projectDir
-  def gradleFile = new File(currentDir, "build.gradle")
-  def androidGradleFile = new File(currentDir, "android/build.gradle")
-  if (!gradleFile.exists() && androidGradleFile.exists()) {
-    child.projectDir = new File(currentDir, "android")
-  }
-}
-
-def mapAndroidModule = { String projectName, String modulePath ->
-  if (findProject(projectName) != null) {
-    project(projectName).projectDir = file(modulePath)
-  }
-}
-
-mapAndroidModule(":expo", "../node_modules/expo/android")
-mapAndroidModule(":react-native-async-storage_async-storage", "../node_modules/@react-native-async-storage/async-storage/android")
-mapAndroidModule(":react-native-community_datetimepicker", "../node_modules/@react-native-community/datetimepicker/android")
-mapAndroidModule(":react-native-firebase_app", "../node_modules/@react-native-firebase/app/android")
-mapAndroidModule(":react-native-firebase_auth", "../node_modules/@react-native-firebase/auth/android")
-mapAndroidModule(":react-native-firebase_firestore", "../node_modules/@react-native-firebase/firestore/android")
-mapAndroidModule(":react-native-google-signin_google-signin", "../node_modules/@react-native-google-signin/google-signin/android")
-mapAndroidModule(":react-native-gesture-handler", "../node_modules/react-native-gesture-handler/android")
-mapAndroidModule(":react-native-google-mobile-ads", "../node_modules/react-native-google-mobile-ads/android")
-mapAndroidModule(":react-native-pager-view", "../node_modules/react-native-pager-view/android")
-mapAndroidModule(":react-native-reanimated", "../node_modules/react-native-reanimated/android")
-mapAndroidModule(":react-native-receive-sharing-intent", "../node_modules/react-native-receive-sharing-intent/android")
-mapAndroidModule(":react-native-safe-area-context", "../node_modules/react-native-safe-area-context/android")
-mapAndroidModule(":react-native-screens", "../node_modules/react-native-screens/android")
-mapAndroidModule(":react-native-svg", "../node_modules/react-native-svg/android")
-mapAndroidModule(":react-native-webview", "../node_modules/react-native-webview/android")
-mapAndroidModule(":react-native-edge-to-edge", "../node_modules/react-native-edge-to-edge/android")
