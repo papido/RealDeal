@@ -45,6 +45,7 @@ const CartScreen = () => {
                   >
                     <SwipeToDelete
                       onDelete={() => removeIngredient(item.id!)}
+                      itemSpacing={10}
                     >
                       <TouchableOpacity
                         activeOpacity={0.9}

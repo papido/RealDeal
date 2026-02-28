@@ -263,7 +263,7 @@ const MenuScreen = () => {
     >
   >({});
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
-  const [showSelectedPrices, setShowSelectedPrices] = useState(false);
+  const [showSelectedPrices, setShowSelectedPrices] = useState(true);
   const [aiCredits, setAiCredits] = useState(0);
   const [fixAllLoading, setFixAllLoading] = useState(false);
   const [rewardedLoaded, setRewardedLoaded] = useState(false);
@@ -1934,9 +1934,12 @@ const MenuScreen = () => {
                         const enableQuantityCheck = !hasUnresolvedMismatch;
 
                         const rows = computedEntries.map((item) => {
+                          const hasResolvedUnitState =
+                            !item.unitMismatch || item.resolvedMismatch;
                           const requiredBase =
                             enableQuantityCheck &&
                             item.isMatch &&
+                            hasResolvedUnitState &&
                             !Number.isNaN(item.effectiveAmount) &&
                             item.priceUnit
                               ? toBaseAmount(
@@ -1945,12 +1948,15 @@ const MenuScreen = () => {
                                 )
                               : null;
                           const stock =
-                            enableQuantityCheck && item.isMatch
+                            enableQuantityCheck &&
+                            item.isMatch &&
+                            hasResolvedUnitState
                               ? ingredientStockMap.get(item.normalizedName)
                               : null;
                           const isLowInCart =
                             enableQuantityCheck &&
                             item.isMatch &&
+                            hasResolvedUnitState &&
                             requiredBase &&
                             stock &&
                             stock.unit === requiredBase.unit &&

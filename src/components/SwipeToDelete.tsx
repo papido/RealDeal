@@ -12,11 +12,12 @@ import Animated, {
 type Props = {
   children: React.ReactNode;
   onDelete: () => void;
+  itemSpacing?: number;
 };
 
 const SWIPE_THRESHOLD = -100;
 
-const SwipeToDelete = ({ children, onDelete }: Props) => {
+const SwipeToDelete = ({ children, onDelete, itemSpacing = 16 }: Props) => {
   const translateX = useSharedValue(0);
 
   const panGesture = Gesture.Pan()
@@ -43,7 +44,7 @@ const SwipeToDelete = ({ children, onDelete }: Props) => {
   }));
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { marginBottom: itemSpacing }]}>
       {/* Background delete layer */}
       <Animated.View style={[styles.deleteBackground, deleteButtonStyle]}>
         <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
@@ -64,7 +65,6 @@ export default SwipeToDelete;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
     borderRadius: 20,
     overflow: "hidden",
   },
