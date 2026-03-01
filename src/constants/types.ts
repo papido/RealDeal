@@ -115,6 +115,10 @@ export interface AuthContextType {
     username: string
   ) => Promise<{ success: boolean; msg?: string }>;
   logout: () => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<{ success: boolean; msg?: string }>;
   deleteAccount: () => Promise<{ success: boolean; msg?: string }>;
   updateUserData: (uid: string) => Promise<UserType | null>;
   isLoading: boolean;

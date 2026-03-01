@@ -19,7 +19,8 @@ import {
 } from "react-native";
 
 const ProfileScreen = () => {
-  const { logout, deleteAccount, user, updateUserData, setUser } = useAuth();
+  const { logout, changePassword, deleteAccount, user, updateUserData, setUser } =
+    useAuth();
   const router = useRouter();
   const { currencySymbol } = useCurrency();
   const [editingField, setEditingField] = useState<"username" | "email" | null>(
@@ -31,6 +32,13 @@ const ProfileScreen = () => {
   });
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [dropdownPosition, setDropdownPosition] = useState({
     x: 0,
     y: 0,
@@ -154,6 +162,51 @@ const ProfileScreen = () => {
         },
       ],
     );
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  };
+
+  const handleChangePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Missing fields", "Please fill in all password fields.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert("Weak password", "New password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Mismatch", "New password and confirmation do not match.");
+      return;
+    }
+    if (currentPassword === newPassword) {
+      Alert.alert(
+        "Invalid password",
+        "New password must be different from current password.",
+      );
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const result = await changePassword(currentPassword, newPassword);
+      if (!result.success) {
+        Alert.alert("Change failed", result.msg || "Could not change password.");
+        return;
+      }
+      closePasswordModal();
+      Alert.alert("Success", "Your password has been updated.");
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   return (
@@ -341,6 +394,13 @@ const ProfileScreen = () => {
       </TouchableOpacity>
 
       <TouchableOpacity
+        style={styles.changePasswordBtn}
+        onPress={() => setShowPasswordModal(true)}
+      >
+        <Text style={styles.changePasswordText}>Change Password</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.deleteBtn, isDeletingAccount && styles.deleteBtnDisabled]}
         onPress={handleDeleteAccount}
         disabled={isDeletingAccount}
@@ -349,6 +409,68 @@ const ProfileScreen = () => {
           {isDeletingAccount ? "Deleting Account..." : "Delete Account"}
         </Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={showPasswordModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closePasswordModal}
+      >
+        <View style={styles.passwordModalBackdrop}>
+          <View style={styles.passwordModalCard}>
+            <Text style={styles.passwordModalTitle}>Change Password</Text>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Current Password"
+              placeholderTextColor="#94a3b8"
+              secureTextEntry
+              value={passwordForm.currentPassword}
+              onChangeText={(t) =>
+                setPasswordForm((p) => ({ ...p, currentPassword: t }))
+              }
+            />
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="New Password"
+              placeholderTextColor="#94a3b8"
+              secureTextEntry
+              value={passwordForm.newPassword}
+              onChangeText={(t) => setPasswordForm((p) => ({ ...p, newPassword: t }))}
+            />
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Confirm New Password"
+              placeholderTextColor="#94a3b8"
+              secureTextEntry
+              value={passwordForm.confirmPassword}
+              onChangeText={(t) =>
+                setPasswordForm((p) => ({ ...p, confirmPassword: t }))
+              }
+            />
+            <View style={styles.passwordActionsRow}>
+              <TouchableOpacity
+                style={styles.passwordCancelBtn}
+                onPress={closePasswordModal}
+                disabled={isChangingPassword}
+              >
+                <Text style={styles.passwordCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.passwordSubmitBtn,
+                  isChangingPassword && styles.passwordSubmitBtnDisabled,
+                ]}
+                onPress={handleChangePassword}
+                disabled={isChangingPassword}
+              >
+                <Text style={styles.passwordSubmitText}>
+                  {isChangingPassword ? "Saving..." : "Save"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -501,6 +623,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
+  changePasswordBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#99f6e4",
+    backgroundColor: "rgba(13, 148, 136, 0.26)",
+    padding: 14,
+    borderRadius: 10,
+  },
+  changePasswordText: {
+    textAlign: "center",
+    color: "#ccfbf1",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
   deleteBtn: {
     marginTop: 12,
     borderWidth: 1,
@@ -517,5 +653,65 @@ const styles = StyleSheet.create({
     color: "#fee2e2",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  passwordModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  passwordModalCard: {
+    backgroundColor: "#0b1220",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+    padding: 16,
+  },
+  passwordModalTitle: {
+    color: "#f8fafc",
+    fontWeight: "700",
+    fontSize: 18,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  passwordInput: {
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#0f172a",
+    borderRadius: 10,
+    color: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  passwordActionsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 4,
+  },
+  passwordCancelBtn: {
+    borderWidth: 1,
+    borderColor: "#334155",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  passwordCancelText: {
+    color: "#cbd5e1",
+    fontWeight: "600",
+  },
+  passwordSubmitBtn: {
+    backgroundColor: "#0ea5e9",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  passwordSubmitBtnDisabled: {
+    opacity: 0.7,
+  },
+  passwordSubmitText: {
+    color: "#e0f2fe",
+    fontWeight: "700",
   },
 });

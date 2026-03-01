@@ -210,6 +210,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean; msg?: string }> => {
+    try {
+      setIsLoading(true);
+      const currentUser = auth().currentUser;
+      if (!currentUser || !currentUser.email) {
+        return { success: false, msg: "No authenticated email user found" };
+      }
+
+      const credential = auth.EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword,
+      );
+
+      await currentUser.reauthenticateWithCredential(credential);
+      await currentUser.updatePassword(newPassword);
+
+      return { success: true };
+    } catch (error: any) {
+      const code = error?.code || "";
+      if (code === "auth/provider-already-linked") {
+        return {
+          success: false,
+          msg: "Password change is not available for this sign-in method.",
+        };
+      }
+      return { success: false, msg: parseAuthError(error) };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteAccount = async (): Promise<{ success: boolean; msg?: string }> => {
     try {
       setIsLoading(true);
@@ -351,6 +385,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser,
     login,
     logout,
+    changePassword,
     deleteAccount,
     register,
     updateUserData,
