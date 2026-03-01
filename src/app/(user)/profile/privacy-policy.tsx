@@ -53,7 +53,22 @@ const PrivacyPolicyScreen = () => {
 
         <Section title="Your Choices and Rights">
           <Bullet text="You can edit profile information in the app." />
-          <Bullet text="You can request account deletion from the Profile tab. Deletion removes your account and associated user data stored by the app." />
+          <Bullet text="You can request account deletion from the Profile tab. See the Account Deletion section below for exact steps and retention details." />
+        </Section>
+
+        <Section title="Account Deletion (Important)">
+          <Text style={styles.bodyStrong}>How to request deletion</Text>
+          <Bullet text="Open RecipeFlow and go to Profile." />
+          <Bullet text='Tap "Delete Account" (or the account deletion option).' />
+          <Bullet text="Confirm the deletion request when prompted." />
+          <Bullet text="If you cannot access the app, contact support using the store-listed support contact and include your account email." />
+          <Text style={styles.bodyStrong}>What is deleted</Text>
+          <Bullet text="Firebase Authentication account record for your login identity." />
+          <Bullet text="User profile data stored for your account (such as username, optional address/phone/profile image, currency preference, AI credits, and metadata)." />
+          <Bullet text="Your app content linked to your account, including recipes, planner entries, and cart data." />
+          <Text style={styles.bodyStrong}>What may be retained and for how long</Text>
+          <Bullet text="Backups and server logs may remain for up to 30 days before permanent deletion from backup/operational systems." />
+          <Bullet text="Data retained only when required for legal, security, fraud-prevention, or dispute-resolution obligations, then removed when no longer required." />
         </Section>
 
         <Section title="Contact">
@@ -124,6 +139,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: "#334155",
+  },
+  bodyStrong: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#1f2937",
+    fontWeight: "700",
+    marginBottom: 4,
+    marginTop: 4,
   },
   bullet: {
     fontSize: 14,
