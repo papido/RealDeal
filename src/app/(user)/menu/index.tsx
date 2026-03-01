@@ -1651,20 +1651,6 @@ const MenuScreen = () => {
                         </TouchableOpacity>
                       </View>
                     </View>
-                    <View style={styles.legendRow}>
-                      <Text style={[styles.legendPill, styles.legendGreen]}>
-                        Green = in cart
-                      </Text>
-                      <Text style={[styles.legendPill, styles.legendGray]}>
-                        Black = not in cart
-                      </Text>
-                      <Text style={[styles.legendPill, styles.legendYellow]}>
-                        Yellow = unit mismatch
-                      </Text>
-                      <Text style={[styles.legendPill, styles.legendRed]}>
-                        Red = not enough
-                      </Text>
-                    </View>
                     <View style={styles.tileList}>
                       {(() => {
                         let totalSum = 0;
@@ -2082,10 +2068,24 @@ const MenuScreen = () => {
               5. If the ingredients is yellow = saved ingredients in cart but
               units don't match
             </Text>
+            <View style={styles.legendRow}>
+              <Text style={[styles.legendPill, styles.legendGreen]}>
+                Green = in cart
+              </Text>
+              <Text style={[styles.legendPill, styles.legendGray]}>
+                Black = not in cart
+              </Text>
+              <Text style={[styles.legendPill, styles.legendYellow]}>
+                Yellow = unit mismatch
+              </Text>
+              <Text style={[styles.legendPill, styles.legendRed]}>
+                Red = not enough in cart
+              </Text>
+            </View>
             <Text style={styles.modalBody}>
               When units don't match (e.g., tbsp vs g), AI suggests a best-fit
               conversion based on ingredient density. You can edit parsed
-              ingredients before saving to avoid AI conversion.
+              ingredients unit before saving to avoid AI conversion.
             </Text>
             <View style={styles.modalActions}>
               <Pressable
@@ -2331,7 +2331,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 8,
+    marginVertical: 4
   },
   legendPill: {
     fontSize: 12,
@@ -2339,7 +2339,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    overflow: "hidden",
+    alignSelf: "flex-start",
   },
   legendGreen: {
     backgroundColor: "#bbf7d0",
@@ -2470,10 +2470,11 @@ const styles = StyleSheet.create({
     color: "#f8fafc",
   },
   modalSubtitle: {
-    marginTop: 4,
+    marginTop: 6,
     fontSize: 14,
     color: "#cbd5f5",
     fontWeight: "600",
+    marginBottom: 8
   },
   modalBody: {
     marginTop: 10,

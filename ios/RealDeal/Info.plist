@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>RealDeal</string>
+    <string>RecipeFlow</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -40,7 +40,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+realdeal</string>
+          <string>exp+recipeflow</string>
         </array>
       </dict>
     </array>
