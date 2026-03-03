@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RecipeFlow",
-    "slug": "RecipeFlow",
+    "slug": "RealDeal",
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "updates": {
@@ -84,3 +84,4 @@
     "owner": "fauzanafk"
   }
 }
+
