@@ -35,7 +35,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="realdeal"/>
-        <data android:scheme="exp+recipeflow"/>
+        <data android:scheme="exp+realdeal"/>
       </intent-filter>
     </activity>
   </application>
