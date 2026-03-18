@@ -382,15 +382,15 @@ const ProfileScreen = () => {
       </View> */}
 
       {/* Logout */}
+      <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+        <Text style={styles.logoutText}>Sign Out</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.policyBtn}
         onPress={() => router.push("/(user)/profile/privacy-policy")}
       >
         <Text style={styles.policyText}>Privacy Policy</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-        <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

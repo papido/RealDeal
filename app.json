@@ -17,7 +17,9 @@
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fauzanafk.RealDeal",
@@ -32,7 +34,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.fauzanafk.RealDeal",
-      "versionCode": 1,
+      "versionCode": 31,
       "googleServicesFile": "./google-services.json",
       "blockedPermissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
