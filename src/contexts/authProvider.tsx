@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
       } else {
         setUser(null);
-        console.log("User logged out:", user);
+        console.log("User logged out:", firebaseUser);
       }
       setIsLoading(false);
     });
@@ -326,15 +326,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         currencySymbol?: string;
         aiCredits?: number;
       };
-      let data = docSnap.data() as UserDocData | undefined;
+      const data = docSnap.data() as UserDocData | undefined;
       const authUser = auth().currentUser;
-      const defaults: Partial<UserDocData> = {};
-      if (typeof data?.aiCredits !== "number") defaults.aiCredits = 5;
-      if (!data?.currencySymbol) defaults.currencySymbol = "$";
-      if (Object.keys(defaults).length > 0) {
-        await docRef.set(defaults, { merge: true });
-        data = { ...(data ?? {}), ...defaults };
-      }
       return {
         uid: data?.uid || authUser?.uid,
         email: data?.email || authUser?.email || undefined,
@@ -343,7 +336,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         address: data?.address || undefined,
         phoneNumber: data?.phoneNumber || "",
         currencySymbol: data?.currencySymbol || "$",
-        aiCredits: data?.aiCredits,
+        aiCredits: typeof data?.aiCredits === "number" ? data.aiCredits : 5,
       };
     } catch (error) {
       console.error("Failed to update user data:", error);

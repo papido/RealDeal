@@ -2,7 +2,6 @@ import CartProvider from "@/src/contexts/CartProvider";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import { FontAwesome, SimpleLineIcons } from "@expo/vector-icons";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import "config/firebase.ts";
 import * as Font from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -12,7 +11,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import mobileAds from "react-native-google-mobile-ads";
 import { AuthProvider, useAuth } from "../contexts/authProvider";
 import { CurrencyProvider } from "../contexts/CurrencyProvider";
-import { IngredientsProvider, useIngredients } from "../contexts/IngredientsProvider";
+import {
+  IngredientsProvider,
+  useIngredients,
+} from "../contexts/IngredientsProvider";
 import { SplashProvider } from "../contexts/SplashProvider";
 
 //Prevent splash screen from hiding before asset loading is complete.
@@ -39,7 +41,7 @@ const AppLayout = () => {
             await clearIngredients();
           },
         },
-      ]
+      ],
     );
   };
 
