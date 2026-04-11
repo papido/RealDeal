@@ -1,4 +1,5 @@
 import { auth, firestore } from "@/config/firebase";
+import ScreenHeader from "@/src/components/ScreenHeader";
 import ingredientsJson from "@/src/constants/ingredients.json";
 import { PLANNER_CARDS_LIMIT } from "@/src/constants/limits";
 import { colors } from "@/src/constants/theme";
@@ -21,7 +22,7 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { Link, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -46,6 +47,7 @@ import {
   RewardedAdEventType,
   TestIds,
 } from "react-native-google-mobile-ads";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 type SavedIngredient = {
   quantity?: string | null;
@@ -265,6 +267,7 @@ const MenuScreen = () => {
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
   const [showSelectedPrices, setShowSelectedPrices] = useState(true);
   const [aiCredits, setAiCredits] = useState(0);
+  const [showCreditInfo, setShowCreditInfo] = useState(false);
   const [fixAllLoading, setFixAllLoading] = useState(false);
   const [rewardedLoaded, setRewardedLoaded] = useState(false);
   const [rewardedLoading, setRewardedLoading] = useState(false);
@@ -281,22 +284,57 @@ const MenuScreen = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitleText}>Menu</Text>
-          <Pressable
-            onPress={() => setShowAiHelpModal(true)}
-            hitSlop={8}
-            style={styles.headerHintButton}
-            accessibilityRole="button"
-            accessibilityLabel="Open tutorial"
-          >
-            <Text style={styles.headerHintText}>Tutorial</Text>
-          </Pressable>
-        </View>
+      header: () => (
+        <ScreenHeader
+          title="Menu"
+          left={
+            <Pressable
+              onPress={() => setShowAiHelpModal(true)}
+              hitSlop={8}
+              style={styles.headerHintButton}
+              accessibilityRole="button"
+              accessibilityLabel="Open tutorial"
+            >
+              <Text style={styles.headerHintText}>Tutorial</Text>
+            </Pressable>
+          }
+          right={
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Pressable
+                onPress={() => setShowCreditInfo(true)}
+                style={styles.creditPill}
+                accessibilityRole="button"
+                accessibilityLabel="Show AI credit usage"
+              >
+                <Text style={styles.creditPillText}>AI points: {aiCredits}</Text>
+              </Pressable>
+              <Link href="/(user)/menu/parseIng" asChild>
+                <Pressable style={styles.headerIconButton}>
+                  <FontAwesome6
+                    name="magnifying-glass"
+                    size={22}
+                    color={colors.neutral900}
+                  />
+                </Pressable>
+              </Link>
+              <Link href="/cart" asChild>
+                <Pressable style={styles.headerIconButton}>
+                  {({ pressed }) => (
+                    <FontAwesome6
+                      name="add"
+                      size={25}
+                      color={colors.neutral900}
+                      style={{ opacity: pressed ? 0.5 : 1 }}
+                    />
+                  )}
+                </Pressable>
+              </Link>
+            </View>
+          }
+        />
       ),
     });
-  }, [navigation]);
+  }, [navigation, aiCredits]);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -2040,6 +2078,36 @@ const MenuScreen = () => {
         </>
       )}
       <Modal
+        visible={showCreditInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCreditInfo(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>AI credit usage</Text>
+            <Text style={styles.modalBody}>
+              Conversions can use AI credits when units don't match. The exact
+              cost depends on how many mismatches are found.
+            </Text>
+            <Text style={styles.modalBody}>Fix All uses a sliding cost:</Text>
+            <Text style={styles.modalList}>1-10 mismatches: 3 credits</Text>
+            <Text style={styles.modalList}>11-20 mismatches: 4 credits</Text>
+            <Text style={styles.modalList}>21-40 mismatches: 6 credits</Text>
+            <Text style={styles.modalList}>41+ mismatches: 7 credits</Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setShowCreditInfo(false)}
+                style={styles.modalButton}
+              >
+                <Text style={styles.modalButtonText}>Got it</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={showAiHelpModal}
         transparent
         animationType="fade"
@@ -2527,14 +2595,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
-  headerTitleWrap: {
-    flexDirection: "row",
-    alignItems: "center",
+  creditPill: {
+    marginRight: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "#8b5e34",
   },
-  headerTitleText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
+  creditPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  headerIconButton: {
+    marginRight: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
   headerHintButton: {
     marginLeft: 6,
