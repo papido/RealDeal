@@ -3,8 +3,11 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { StackActions } from "@react-navigation/native";
 import { Tabs } from "expo-router";
 import React from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const _layout = () => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -16,7 +19,9 @@ const _layout = () => {
         tabBarStyle: {
           backgroundColor: colors.primary,
           borderTopColor: "#ccc",
-          height: 64,
+          height: 64 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
+          paddingTop: 8,
         },
       }}
     >

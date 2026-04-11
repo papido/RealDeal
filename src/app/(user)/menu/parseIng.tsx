@@ -211,6 +211,11 @@ export default function IngredientParser(): JSX.Element {
       )
       .filter((item) => item.ingredient);
 
+  const hasParsedIngredients = useMemo(
+    () => buildCleanIngredients().length > 0,
+    [parsedIngredients],
+  );
+
   const saveIngredients = async (
     cleanIngredients: SavedIngredientPayload[],
     recipeNameValue: string,
@@ -683,29 +688,31 @@ export default function IngredientParser(): JSX.Element {
           </View>
         </Modal>
 
-        {editAllMode ? (
-          <Button
-            style={styles.saveButton}
-            onPress={() => handleSavePress(true)}
-            loading={saving}
-            disabled={saving || parsedIngredients.length === 0}
-          >
-            <Text style={styles.saveButtonText}>
-              {saving ? "Saving..." : "Done & Save"}
-            </Text>
-          </Button>
-        ) : (
-          <Button
-            style={styles.saveButton}
-            onPress={() => handleSavePress(false)}
-            loading={saving}
-            disabled={saving || parsedIngredients.length === 0}
-          >
-            <Text style={styles.saveButtonText}>
-              {saving ? "Saving..." : "Save"}
-            </Text>
-          </Button>
-        )}
+        {hasParsedIngredients
+          ? (editAllMode ? (
+              <Button
+                style={styles.saveButton}
+                onPress={() => handleSavePress(true)}
+                loading={saving}
+                disabled={saving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {saving ? "Saving..." : "Done & Save"}
+                </Text>
+              </Button>
+            ) : (
+              <Button
+                style={styles.saveButton}
+                onPress={() => handleSavePress(false)}
+                loading={saving}
+                disabled={saving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {saving ? "Saving..." : "Save"}
+                </Text>
+              </Button>
+            ))
+          : null}
         {showWebsiteSheet ? (
           <View style={styles.websiteOverlay}>
             <View style={styles.websiteHeader}>
@@ -1006,4 +1013,3 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
 });
-

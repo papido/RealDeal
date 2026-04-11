@@ -1,4 +1,5 @@
 import { auth, firestore } from "@/config/firebase";
+import ScreenHeader from "@/src/components/ScreenHeader";
 import { colors } from "@/src/constants/theme";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { Link, Stack } from "expo-router";
@@ -47,6 +48,7 @@ export default function MenuStack() {
     <>
       <Stack
         screenOptions={{
+          headerTitleAlign: "left",
           headerStyle: {
             backgroundColor: colors.primary,
           },
@@ -55,51 +57,61 @@ export default function MenuStack() {
         <Stack.Screen
           name="index"
           options={{
-            title: "Menu",
-            headerRight: () => (
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Link href="/(user)/menu/parseIng" asChild>
-                  <Pressable style={{ marginRight: 12 }}>
-                    <View
-                      style={{ flexDirection: "row", alignItems: "center" }}
-                    >
-                      <Pressable
-                        onPress={() => setShowCreditInfo(true)}
-                        style={styles.creditPill}
-                        accessibilityRole="button"
-                        accessibilityLabel="Show AI credit usage"
-                      >
-                        <Text style={styles.creditPillText}>
-                          AI credit: {aiCredits ?? 0}
-                        </Text>
+            header: () => (
+              <ScreenHeader
+                title="Menu"
+                right={
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Link href="/(user)/menu/parseIng" asChild>
+                      <Pressable style={{ marginRight: 12 }}>
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
+                          <Pressable
+                            onPress={() => setShowCreditInfo(true)}
+                            style={styles.creditPill}
+                            accessibilityRole="button"
+                            accessibilityLabel="Show AI credit usage"
+                          >
+                            <Text style={styles.creditPillText}>
+                              AI credit: {aiCredits ?? 0}
+                            </Text>
+                          </Pressable>
+                          <FontAwesome6
+                            name="magnifying-glass"
+                            size={22}
+                            color={colors.neutral900}
+                          />
+                        </View>
                       </Pressable>
-                      <FontAwesome6
-                        name="magnifying-glass"
-                        size={22}
-                        color={colors.neutral900}
-                      />
-                    </View>
-                  </Pressable>
-                </Link>
-                <Link href="/cart" asChild>
-                  <Pressable>
-                    {({ pressed }) => (
-                      <FontAwesome6
-                        name="add"
-                        size={25}
-                        color={colors.neutral900}
-                        style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                      />
-                    )}
-                  </Pressable>
-                </Link>
-              </View>
+                    </Link>
+                    <Link href="/cart" asChild>
+                      <Pressable>
+                        {({ pressed }) => (
+                          <FontAwesome6
+                            name="add"
+                            size={25}
+                            color={colors.neutral900}
+                            style={{
+                              marginRight: 15,
+                              opacity: pressed ? 0.5 : 1,
+                            }}
+                          />
+                        )}
+                      </Pressable>
+                    </Link>
+                  </View>
+                }
+              />
             ),
           }}
         />
         <Stack.Screen
           name="parseIng"
-          options={{ title: "Parse Ingredients" }}
+          options={{
+            title: "Parse Ingredients",
+            headerBackTitle: "Menu",
+          }}
         />
       </Stack>
       <Modal
