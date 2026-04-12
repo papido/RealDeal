@@ -2098,7 +2098,7 @@ const MenuScreen = () => {
             <View style={styles.modalActions}>
               <Pressable
                 onPress={() => setShowCreditInfo(false)}
-                style={styles.modalButton}
+                style={[styles.modalButton, styles.modalButtonPrimary]}
               >
                 <Text style={styles.modalButtonText}>Got it</Text>
               </Pressable>
@@ -2535,19 +2535,28 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: "#fff",
   },
   modalSubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#cbd5f5",
+    color: "#fff",
     fontWeight: "600",
     marginBottom: 8
   },
   modalBody: {
     marginTop: 10,
     fontSize: 13,
-    color: "#e2e8f0",
+    color: "#fff",
+  },
+  modalList: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#fff",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "600",
   },
   datetimeRow: {
     marginTop: 12,
@@ -2579,6 +2588,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
+  },
+  modalButtonPrimary: {
+    backgroundColor: "#1a73e8",
   },
   modalCancelButton: {
     marginRight: 10,
