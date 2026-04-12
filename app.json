@@ -23,7 +23,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fauzanafk.RealDeal",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "deploymentTarget": "13.4",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
